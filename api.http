@@ -1,0 +1,40 @@
+### Create Client
+POST http://localhost:3000/client
+Content-Type: application/json
+
+{
+    "name": "Don Quixote",
+    "email": "LaMachaland@gmail.com",
+    "password": "Rocinante3&"
+}
+
+### Get All Clients
+GET http://localhost:3000/client
+
+### Get Client by ID
+GET http://localhost:3000/client/2c7f2e7b-4862-4762-a09f-d9873a106ced
+
+### Update Client
+PATCH http://localhost:3000/client/9292b61d-fc9c-432b-be2d-e3433e2fcacd
+Content-Type: application/json
+
+{
+    "name": "Glory Mary_UwU",
+    "email": "GloryMary@gmail.com",
+    "password": "Beautiful123"
+}
+
+### Delete Client
+DELETE http://localhost:3000/client/2c7f2e7b-4862-4762-a09f-d9873a106ced
+
+### Create Employee
+POST http://localhost:3000/employee
+Content-Type: application/json
+
+{
+    "name": "RandomGuy",
+    "email": "RandomGuy@gmail.com",
+    "password": "RandomPassword123!",
+    "CPF": "222.333.444-55",
+    "phone": "(22) 98765-4321"
+}
