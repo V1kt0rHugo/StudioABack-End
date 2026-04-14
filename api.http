@@ -38,3 +38,19 @@ Content-Type: application/json
     "CPF": "222.333.444-55",
     "phone": "(22) 98765-4321"
 }
+
+
+
+### Create Customer Service
+POST http://localhost:3000/customer-service
+Content-Type: application/json
+
+{
+    "idClient": "a54efa1e-482a-4697-bb66-84812f8d5a83",
+    "idEmployee": "560cc6fa-7bf0-46da-89e0-1805c28f3e7f",
+    "Date": "2022-01-01",
+    "TotalValue": 100
+}
+
+### Get All Customer Services
+GET http://localhost:3000/customer-service

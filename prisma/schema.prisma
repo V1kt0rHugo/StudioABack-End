@@ -13,6 +13,13 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
+enum ServiceStatus {
+  SCHEDULED
+  IN_PROGRESS
+  COMPLETED
+  CANCELED
+}
+
 model Client {
   id               String            @id @default(uuid())
   name             String
@@ -28,18 +35,18 @@ model Employee {
   password         String
   CPF              String            @unique
   phone            String
-  CustomerServices CustomerService[]
+  PerformedServices PerformedServices[]
 }
 
 model CustomerService {
-  id            String          @id @default(uuid())
-  idClient      String
-  Client        Client          @relation(fields: [idClient], references: [id])
-  idEmployee    String
-  Employee      Employee        @relation(fields: [idEmployee], references: [id])
-  Date          DateTime
-  TotalValue    Float
-  ConsumedItems ConsumedItems[]
+  id                String              @id @default(uuid())
+  idClient          String
+  Client            Client              @relation(fields: [idClient], references: [id])
+  Status            ServiceStatus       @default(SCHEDULED)
+  Date              DateTime
+  TotalValue        Float
+  ConsumedItems     ConsumedItems[]
+  PerformedServices PerformedServices[]
 }
 
 model Products {
@@ -52,10 +59,22 @@ model Products {
 }
 
 model Services {
-  id                   String @id @default(uuid())
+  id                   String              @id @default(uuid())
   name                 String
   price                Float
   commissionPercentage Float
+  PerformedServices    PerformedServices[]
+}
+
+model PerformedServices {
+  id                String          @id @default(uuid())
+  idCustomerService String
+  CustomerService   CustomerService @relation(fields: [idCustomerService], references: [id])
+  idService         String
+  Service           Services        @relation(fields: [idService], references: [id])
+  idEmployee        String
+  Employee          Employee        @relation(fields: [idEmployee], references: [id])
+  priceCharged      Float
 }
 
 model ConsumedItems {

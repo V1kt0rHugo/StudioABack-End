@@ -6,11 +6,11 @@ import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class ClientService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createClientDto: CreateClientDto) {
     const salt = await bcrypt.genSalt();
-    const hashedPassword = await bcrypt.hash(createClientDto.password, salt)
+    const hashedPassword = await bcrypt.hash(createClientDto.password, salt);
     const client = await this.prisma.client.create({
       data: {
         name: createClientDto.name,
@@ -21,8 +21,8 @@ export class ClientService {
         id: true,
         name: true,
         email: true,
-      }
-    })
+      },
+    });
     return client;
   }
 
@@ -32,60 +32,62 @@ export class ClientService {
         id: true,
         name: true,
         email: true,
-      }
+      },
     });
   }
 
   async findOne(id: string) {
     return await this.prisma.client.findUnique({
       where: {
-        id
+        id,
       },
       select: {
         id: true,
         name: true,
         email: true,
-      }
+      },
     });
   }
 
   async update(id: string, updateClientDto: UpdateClientDto) {
     const client = await this.prisma.client.findUnique({
-      where: { id }
+      where: { id },
     });
-    if (!client) throw new Error("Cliente não encontrado");
+    if (!client) throw new Error('Cliente não encontrado');
 
     if (updateClientDto.password) {
       const salt = await bcrypt.genSalt();
-      updateClientDto.password = await bcrypt.hash(updateClientDto.password, salt);
+      updateClientDto.password = await bcrypt.hash(
+        updateClientDto.password,
+        salt,
+      );
     }
 
     await this.prisma.client.update({
       data: updateClientDto,
-      where: { id }
+      where: { id },
     });
 
-    return { message: "Usuário atualizado com sucesso" };
+    return { message: 'Usuário atualizado com sucesso' };
   }
-
 
   async remove(id: string) {
     const client = await this.prisma.client.findUnique({
       where: {
-        id
-      }
+        id,
+      },
     });
 
     if (!client) {
-      throw new Error("Cliente não encontrado")
+      throw new Error('Cliente não encontrado');
     }
 
     await this.prisma.client.delete({
       where: {
-        id
-      }
+        id,
+      },
     });
 
-    return { message: "Usuário deletado com sucesso" };
+    return { message: 'Usuário deletado com sucesso' };
   }
 }
