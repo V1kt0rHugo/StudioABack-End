@@ -29,13 +29,16 @@ model Client {
 }
 
 model Employee {
-  id               String            @id @default(uuid())
-  name             String
-  email            String            @unique
-  password         String
-  CPF              String            @unique
-  phone            String
-  PerformedServices PerformedServices[]
+  id                   String              @id @default(uuid())
+  name                 String
+  email                String              @unique
+  password             String
+  CPF                  String              @unique
+  phone                String
+  commissionPercentage Float
+  PerformedServices    PerformedServices[]
+  Skills               Services[]          @relation("EmployeeSkills")
+  Schedules            EmployeeSchedule[]
 }
 
 model CustomerService {
@@ -59,22 +62,24 @@ model Products {
 }
 
 model Services {
-  id                   String              @id @default(uuid())
-  name                 String
-  price                Float
-  commissionPercentage Float
-  PerformedServices    PerformedServices[]
+  id                String              @id @default(uuid())
+  name              String
+  price             Float
+  PerformedServices PerformedServices[]
+  SkilledEmployees  Employee[]          @relation("EmployeeSkills")
 }
 
 model PerformedServices {
-  id                String          @id @default(uuid())
-  idCustomerService String
-  CustomerService   CustomerService @relation(fields: [idCustomerService], references: [id])
-  idService         String
-  Service           Services        @relation(fields: [idService], references: [id])
-  idEmployee        String
-  Employee          Employee        @relation(fields: [idEmployee], references: [id])
-  priceCharged      Float
+  id                   String          @id @default(uuid())
+  idCustomerService    String
+  CustomerService      CustomerService @relation(fields: [idCustomerService], references: [id])
+  idService            String
+  Service              Services        @relation(fields: [idService], references: [id])
+  idEmployee           String
+  Employee             Employee        @relation(fields: [idEmployee], references: [id])
+  priceCharged         Float
+  commissionPercentage Float
+  commissionValue      Float
 }
 
 model ConsumedItems {
@@ -84,4 +89,13 @@ model ConsumedItems {
   idProduct         String
   Products          Products        @relation(fields: [idProduct], references: [id])
   usedQuantity      Int
+}
+
+model EmployeeSchedule {
+  id         String   @id @default(uuid())
+  employeeId String
+  Employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
+  dayOfWeek  Int      
+  startTime  String   
+  endTime    String   
 }

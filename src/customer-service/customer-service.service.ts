@@ -1,4 +1,4 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
 import { CreateCustomerServiceDto } from './dto/create-customer-service.dto';
 import { UpdateCustomerServiceDto } from './dto/update-customer-service.dto';
 import { PrismaService } from 'src/database/prisma.service';
@@ -41,6 +41,8 @@ export class CustomerServiceService {
       idService: string;
       idEmployee: string;
       priceCharged: number;
+      commissionPercentage: number;
+      commissionValue: number;
     }[] = [];
 
     for (const item of createCustomerServiceDto.services) {
@@ -53,11 +55,44 @@ export class CustomerServiceService {
 
       const employee = await this.prisma.employee.findUnique({
         where: { id: item.employeeId },
+        include: { Skills: true, Schedules: true },
       });
       if (!employee) {
         throw new NotFoundException(
           `Funcionário ${item.employeeId} não encontrado`,
         );
+      }
+
+      // Validação de Especialidade (Skill)
+      const hasSkill = employee.Skills.some((skill) => skill.id === item.serviceId);
+      if (!hasSkill) {
+        throw new BadRequestException(
+          `O funcionário ${employee.name} não possui a competência para realizar o serviço ${service.name}.`,
+        );
+      }
+
+      // Validação de Escala de Horário (Schedule)
+      const appointmentDate = createCustomerServiceDto.Date
+        ? new Date(createCustomerServiceDto.Date)
+        : new Date();
+      const dayOfWeek = appointmentDate.getDay();
+      const hours = appointmentDate.getHours().toString().padStart(2, '0');
+      const minutes = appointmentDate.getMinutes().toString().padStart(2, '0');
+      const timeStr = `${hours}:${minutes}`;
+
+      if (employee.Schedules && employee.Schedules.length > 0) {
+        const hasSchedule = employee.Schedules.some(
+          (sched) =>
+            sched.dayOfWeek === dayOfWeek &&
+            sched.startTime <= timeStr &&
+            sched.endTime >= timeStr,
+        );
+
+        if (!hasSchedule) {
+          throw new BadRequestException(
+            `O funcionário ${employee.name} não atende em turnos ativos neste horário (${timeStr}).`,
+          );
+        }
       }
 
       const price = item.customPrice ?? service.price;
@@ -67,6 +102,8 @@ export class CustomerServiceService {
         idService: item.serviceId,
         idEmployee: item.employeeId,
         priceCharged: price,
+        commissionPercentage: employee.commissionPercentage,
+        commissionValue: price * (employee.commissionPercentage / 100),
       });
     }
 
@@ -122,8 +159,7 @@ export class CustomerServiceService {
     const commissionMap = new Map<string, CommissionByServiceResult>();
 
     for (const ps of performedServices) {
-      const commissionValue =
-        ps.priceCharged * (ps.Service.commissionPercentage / 100);
+      const commissionValue = ps.commissionValue;
 
       const existing = commissionMap.get(ps.idEmployee);
       if (existing) {

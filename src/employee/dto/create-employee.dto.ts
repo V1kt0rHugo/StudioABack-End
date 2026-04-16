@@ -4,7 +4,23 @@ import {
   IsNotEmpty,
   MinLength,
   Matches,
+  IsNumber,
+  IsOptional,
+  IsArray,
+  ValidateNested,
 } from 'class-validator';
+import { Type } from 'class-transformer';
+
+export class ScheduleDto {
+  @IsNumber()
+  dayOfWeek: number;
+
+  @IsString()
+  startTime: string;
+
+  @IsString()
+  endTime: string;
+}
 
 export class CreateEmployeeDto {
   @IsString()
@@ -41,4 +57,19 @@ export class CreateEmployeeDto {
       'O telefone deve estar no formato (XX) XXXX-XXXX ou (XX) XXXXX-XXXX',
   })
   phone: string;
+
+  @IsNumber()
+  @IsNotEmpty({ message: 'A porcentagem de comissão não pode ser vazia' })
+  commissionPercentage: number;
+
+  @IsOptional()
+  @IsArray()
+  @IsString({ each: true })
+  skills?: string[];
+
+  @IsOptional()
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => ScheduleDto)
+  schedules?: ScheduleDto[];
 }

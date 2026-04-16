@@ -17,6 +17,13 @@ export class EmployeeService {
         password: hashedPassword,
         CPF: createEmployeeDto.CPF,
         phone: createEmployeeDto.phone,
+        commissionPercentage: createEmployeeDto.commissionPercentage,
+        Skills: {
+          connect: createEmployeeDto.skills?.map((id) => ({ id })) || [],
+        },
+        Schedules: {
+          create: createEmployeeDto.schedules || [],
+        },
       },
       select: {
         id: true,
@@ -24,6 +31,9 @@ export class EmployeeService {
         email: true,
         CPF: true,
         phone: true,
+        commissionPercentage: true,
+        Skills: true,
+        Schedules: true,
       },
     });
     return employee;
@@ -37,6 +47,9 @@ export class EmployeeService {
         email: true,
         CPF: true,
         phone: true,
+        commissionPercentage: true,
+        Skills: true,
+        Schedules: true,
       },
     });
   }
@@ -52,6 +65,9 @@ export class EmployeeService {
         email: true,
         CPF: true,
         phone: true,
+        commissionPercentage: true,
+        Skills: true,
+        Schedules: true,
       },
     });
   }
@@ -142,19 +158,16 @@ export class EmployeeService {
     // 4. O Cálculo da Comissão linha por linha
     // O '.map' converte a lista bruta do banco em um Relatório Limpo (o Extrato do Funcionário)
     const detailedCommissions = performedServices.map((ps) => {
-      // Cálculo Lógico: Cobrado do Cliente * (Taxa do Serviço / 100)
-      const commissionValue = ps.priceCharged * (ps.Service.commissionPercentage / 100);
-      
-      // Adiciona o valor deste serviço no Saldo Total
-      totalCommission += commissionValue;
+      // Adiciona o valor deste serviço no Saldo Total (lido do histórico daquele dia)
+      totalCommission += ps.commissionValue;
 
       // Monta o "Recibo" de cada unidade de serviço feito
       return {
         performedServiceId: ps.id,
         serviceName: ps.Service.name,
         priceCharged: ps.priceCharged,
-        commissionPercentage: ps.Service.commissionPercentage,
-        commissionValue: commissionValue,
+        commissionPercentage: ps.commissionPercentage,
+        commissionValue: ps.commissionValue,
         date: ps.CustomerService.Date,
         customerServiceId: ps.CustomerService.id,
       };

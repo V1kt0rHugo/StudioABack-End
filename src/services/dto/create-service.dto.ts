@@ -5,6 +5,4 @@ export class CreateServiceDto {
   name: string;
   @IsNumber()
   price: number;
-  @IsNumber()
-  commissionPercentage: number;
 }
