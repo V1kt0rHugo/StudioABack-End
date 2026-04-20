@@ -47,6 +47,7 @@ model CustomerService {
   Client            Client              @relation(fields: [idClient], references: [id])
   Status            ServiceStatus       @default(SCHEDULED)
   Date              DateTime
+  EndTime           DateTime
   TotalValue        Float
   ConsumedItems     ConsumedItems[]
   PerformedServices PerformedServices[]
@@ -65,6 +66,7 @@ model Services {
   id                String              @id @default(uuid())
   name              String
   price             Float
+  estimatedDuration Int                 @default(30)
   PerformedServices PerformedServices[]
   SkilledEmployees  Employee[]          @relation("EmployeeSkills")
 }

@@ -5,7 +5,7 @@ Content-Type: application/json
 {
     "name": "Dulcineia",
     "email": "UmbrellaKindred@gmail.com",
-    "password": "FuckS@ncho123!"
+    "password": "FuckSancho123!"
 }
 
 ### Get All Clients
@@ -39,9 +39,9 @@ Content-Type: application/json
     "phone": "(13) 99999-9999",
     "commissionPercentage": 50,
     "skills": [
-      "9c0fcfaa-f8f2-4e1e-a00b-76e2d047faf1",
-      "544c3bb0-2908-447d-b566-1354078adfd4",
-      "6af66fdb-bf0d-408b-9889-416b37cb10fb"
+      "bc370a1a-7297-4e86-b099-86d1fe5b4894",
+      "ac3c0360-a3fc-4a73-a458-6782883b7234",
+      "dc9e4cfc-1d11-45a1-ae1f-b78af5ab31eb"
     ],
     "schedules": [
       { "dayOfWeek": 2, "startTime": "09:00", "endTime": "11:00" },
@@ -63,19 +63,30 @@ POST http://localhost:3000/customer-service
 Content-Type: application/json
 
 {
-    "idClient": "dd485171-eef4-4e6d-a71a-6402c96e4d09",
-    "idEmployee": "3eb45b46-6e86-467c-bb8c-17b7e47ff9ae",
-    "Date": "2026-04-21T12:00:00-03:00",
+    "idClient": "18bbeb01-be12-4ae9-9984-f56c3885f606",
+    "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
+    "Date": "2026-04-21T09:00:00-03:00",
     "services": [
         {
-            "serviceId": "9c0fcfaa-f8f2-4e1e-a00b-76e2d047faf1",
-            "employeeId": "3eb45b46-6e86-467c-bb8c-17b7e47ff9ae",
-            "customPrice": 100
+            "serviceId": "bc370a1a-7297-4e86-b099-86d1fe5b4894",
+            "customPrice": 50
         },
         {
-            "serviceId": "544c3bb0-2908-447d-b566-1354078adfd4",
-            "employeeId": "560cc6fa-7bf0-46da-89e0-1805c28f3e7f",
-            "customPrice": 100
+            "serviceId": "ac3c0360-a3fc-4a73-a458-6782883b7234"
+        }
+    ]
+}
+### Create Customer Service
+POST http://localhost:3000/customer-service
+Content-Type: application/json
+
+{
+    "idClient": "18bbeb01-be12-4ae9-9984-f56c3885f606",
+    "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
+    "Date": "2026-04-21T09:30:00-03:00",
+    "services": [
+        {
+            "serviceId": "2a467d8e-5996-4be4-a405-2209f5f0a145"
         }
     ]
 }
@@ -88,8 +99,9 @@ POST http://localhost:3000/services
 Content-Type: application/json
 
 {
-    "name": "Progressiva",
-    "price": 250.00
+    "name": "Corte",
+    "price": 50.00,
+    "estimatedDuration": 30
 }
 
 ### Get All Services

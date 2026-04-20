@@ -9,14 +9,10 @@ import {
 } from 'class-validator';
 import { Type } from 'class-transformer';
 
-export class ServiceWithEmployeeDto {
+export class ServiceItemDto {
   @IsString()
   @IsUUID()
   serviceId: string;
-
-  @IsString()
-  @IsUUID()
-  employeeId: string;
 
   @IsOptional()
   @IsNumber()
@@ -28,11 +24,15 @@ export class CreateCustomerServiceDto {
   @IsUUID()
   idClient: string;
 
+  @IsString()
+  @IsUUID()
+  employeeId: string;
+
   @IsDateString()
   Date: Date;
 
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => ServiceWithEmployeeDto)
-  services: ServiceWithEmployeeDto[];
+  @Type(() => ServiceItemDto)
+  services: ServiceItemDto[];
 }

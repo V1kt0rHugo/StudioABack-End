@@ -37,6 +37,7 @@ export class CustomerServiceService {
     }
 
     let calculatedTotalValue = 0;
+    let totalEstimatedDuration = 0;
     const performedServicesData: {
       idService: string;
       idEmployee: string;
@@ -44,6 +45,21 @@ export class CustomerServiceService {
       commissionPercentage: number;
       commissionValue: number;
     }[] = [];
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: createCustomerServiceDto.employeeId },
+      include: { Skills: true, Schedules: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException(
+        `Funcionário ${createCustomerServiceDto.employeeId} não encontrado`,
+      );
+    }
+
+    const appointmentDate = createCustomerServiceDto.Date
+      ? new Date(createCustomerServiceDto.Date)
+      : new Date();
 
     for (const item of createCustomerServiceDto.services) {
       const service = await this.prisma.services.findUnique({
@@ -53,66 +69,90 @@ export class CustomerServiceService {
         throw new NotFoundException(`Serviço ${item.serviceId} não encontrado`);
       }
 
-      const employee = await this.prisma.employee.findUnique({
-        where: { id: item.employeeId },
-        include: { Skills: true, Schedules: true },
-      });
-      if (!employee) {
-        throw new NotFoundException(
-          `Funcionário ${item.employeeId} não encontrado`,
-        );
-      }
-
       // Validação de Especialidade (Skill)
-      const hasSkill = employee.Skills.some((skill) => skill.id === item.serviceId);
+      const hasSkill = employee.Skills.some(
+        (skill) => skill.id === item.serviceId,
+      );
       if (!hasSkill) {
         throw new BadRequestException(
           `O funcionário ${employee.name} não possui a competência para realizar o serviço ${service.name}.`,
         );
       }
 
-      // Validação de Escala de Horário (Schedule)
-      const appointmentDate = createCustomerServiceDto.Date
-        ? new Date(createCustomerServiceDto.Date)
-        : new Date();
-      const dayOfWeek = appointmentDate.getDay();
-      const hours = appointmentDate.getHours().toString().padStart(2, '0');
-      const minutes = appointmentDate.getMinutes().toString().padStart(2, '0');
-      const timeStr = `${hours}:${minutes}`;
-
-      if (employee.Schedules && employee.Schedules.length > 0) {
-        const hasSchedule = employee.Schedules.some(
-          (sched) =>
-            sched.dayOfWeek === dayOfWeek &&
-            sched.startTime <= timeStr &&
-            sched.endTime >= timeStr,
-        );
-
-        if (!hasSchedule) {
-          throw new BadRequestException(
-            `O funcionário ${employee.name} não atende em turnos ativos neste horário (${timeStr}).`,
-          );
-        }
-      }
-
+      totalEstimatedDuration += service.estimatedDuration;
       const price = item.customPrice ?? service.price;
       calculatedTotalValue += price;
 
       performedServicesData.push({
         idService: item.serviceId,
-        idEmployee: item.employeeId,
+        idEmployee: employee.id,
         priceCharged: price,
         commissionPercentage: employee.commissionPercentage,
         commissionValue: price * (employee.commissionPercentage / 100),
       });
     }
 
+    const endTime = new Date(
+      appointmentDate.getTime() + totalEstimatedDuration * 60000,
+    );
+
+    // Validação de Escala de Horário (Schedule)
+    const dayOfWeek = appointmentDate.getDay();
+    const startHours = appointmentDate.getHours().toString().padStart(2, '0');
+    const startMinutes = appointmentDate.getMinutes().toString().padStart(2, '0');
+    const endHours = endTime.getHours().toString().padStart(2, '0');
+    const endMinutes = endTime.getMinutes().toString().padStart(2, '0');
+    
+    const startTimeStr = `${startHours}:${startMinutes}`;
+    const endTimeStr = `${endHours}:${endMinutes}`;
+
+    if (employee.Schedules && employee.Schedules.length > 0) {
+      const hasSchedule = employee.Schedules.some(
+        (sched) =>
+          sched.dayOfWeek === dayOfWeek &&
+          sched.startTime <= startTimeStr &&
+          sched.endTime >= endTimeStr,
+      );
+
+      if (!hasSchedule) {
+        throw new BadRequestException(
+          `O funcionário ${employee.name} não atende em turnos ativos suficientes para cobrir o horário (${startTimeStr} às ${endTimeStr}).`,
+        );
+      }
+    }
+
+    // Validação de Conflito de Horário (Overlap de Agendamentos)
+    const overlappingService = await this.prisma.performedServices.findFirst({
+      where: {
+        idEmployee: employee.id,
+        CustomerService: {
+          Status: {
+            not: 'CANCELED',
+          },
+          Date: {
+            lt: endTime,
+          },
+          EndTime: {
+            gt: appointmentDate,
+          },
+        },
+      },
+      include: {
+        CustomerService: true,
+      },
+    });
+
+    if (overlappingService) {
+      throw new BadRequestException(
+        `O funcionário ${employee.name} já possui ocupação na agenda para o período solicitado.`,
+      );
+    }
+
     const customerService = await this.prisma.customerService.create({
       data: {
         idClient: createCustomerServiceDto.idClient,
-        Date: createCustomerServiceDto.Date
-          ? new Date(createCustomerServiceDto.Date)
-          : new Date(),
+        Date: appointmentDate,
+        EndTime: endTime,
         TotalValue: calculatedTotalValue,
         PerformedServices: {
           create: performedServicesData,
