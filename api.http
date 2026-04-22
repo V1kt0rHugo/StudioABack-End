@@ -4,8 +4,11 @@ Content-Type: application/json
 
 {
     "name": "Dulcineia",
-    "email": "UmbrellaKindred@gmail.com",
-    "password": "FuckSancho123!"
+    "email": "UmbrellaKindred2@gmail.com",
+    "password": "FuckSancho123!",
+    "phone": "(13) 99999-9999",
+    "birthDate": "2000-01-01",
+    "notes": "Cliente VIP"
 }
 
 ### Get All Clients
@@ -21,11 +24,14 @@ Content-Type: application/json
 {
     "name": "Glory Mary_UwU",
     "email": "GloryMary@gmail.com",
-    "password": "Beautiful123"
+    "password": "Beautiful123",
+    "phone": "(13) 99999-9999",
+    "birthDate": "2000-01-01",
+    "notes": "Cliente VIP"
 }
 
 ### Delete Client
-DELETE http://localhost:3000/client/2c7f2e7b-4862-4762-a09f-d9873a106ced
+DELETE http://localhost:3000/client/18bbeb01-be12-4ae9-9984-f56c3885f606
 
 ### Create Employee
 POST http://localhost:3000/employee
@@ -57,13 +63,44 @@ Content-Type: application/json
     ]
 }
 
+###update employee
+PATCH http://localhost:3000/employee/b557d13c-108f-40d6-acf1-6257cc9bbe9c
+Content-Type: application/json
+
+{
+    "name": "Jenifer",
+    "email": "jenifer@studio.com",
+    "password": "Password123!",
+    "CPF": "123.456.789-00",
+    "phone": "(13) 99999-9999",
+    "commissionPercentage": 50,
+    "skills": [
+      "bc370a1a-7297-4e86-b099-86d1fe5b4894",
+      "ac3c0360-a3fc-4a73-a458-6782883b7234",
+      "dc9e4cfc-1d11-45a1-ae1f-b78af5ab31eb",
+      "775771cf-7a6a-4a5c-9517-480589d0159f"
+    ],
+    "schedules": [
+      { "dayOfWeek": 2, "startTime": "09:00", "endTime": "11:00" },
+      { "dayOfWeek": 2, "startTime": "13:00", "endTime": "18:00" },
+      { "dayOfWeek": 3, "startTime": "09:00", "endTime": "11:00" },
+      { "dayOfWeek": 3, "startTime": "13:00", "endTime": "18:00" },
+      { "dayOfWeek": 4, "startTime": "09:00", "endTime": "11:00" },
+      { "dayOfWeek": 4, "startTime": "13:00", "endTime": "18:00" },
+      { "dayOfWeek": 5, "startTime": "09:00", "endTime": "11:00" },
+      { "dayOfWeek": 5, "startTime": "13:00", "endTime": "18:00" },
+      { "dayOfWeek": 6, "startTime": "09:00", "endTime": "11:00" },
+      { "dayOfWeek": 6, "startTime": "13:00", "endTime": "18:00" }
+    ]
+}
+
 
 ### Create Customer Service
 POST http://localhost:3000/customer-service
 Content-Type: application/json
 
 {
-    "idClient": "18bbeb01-be12-4ae9-9984-f56c3885f606",
+    "idClient": "20220005-070b-49c9-8b16-610113a83849",
     "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
     "Date": "2026-04-21T09:00:00-03:00",
     "services": [
@@ -83,10 +120,10 @@ Content-Type: application/json
 {
     "idClient": "18bbeb01-be12-4ae9-9984-f56c3885f606",
     "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
-    "Date": "2026-04-21T09:30:00-03:00",
+    "Date": "2026-04-21T09:30:00-17:00",
     "services": [
         {
-            "serviceId": "2a467d8e-5996-4be4-a405-2209f5f0a145"
+            "serviceId": "bc370a1a-7297-4e86-b099-86d1fe5b4894"
         }
     ]
 }
@@ -112,3 +149,104 @@ GET http://localhost:3000/employee
 
 ### Delete Service
 DELETE http://localhost:3000/services/61996bff-b108-45d5-b485-c78c625a15f3
+
+### Get All Deleted Clients
+GET http://localhost:3000/client/deleted
+
+### Get Client History
+GET http://localhost:3000/client/18bbeb01-be12-4ae9-9984-f56c3885f606/history
+
+### Create Product (Cadastrando produto em ML)
+POST http://localhost:3000/products
+Content-Type: application/json
+
+{
+    "name": "Progressiva Liss Extreme",
+    "price": 250.00,
+    "brand": "Loreal Professional",
+    "stock": 1000.5
+}
+
+### Fechar Atendimento e Dar Baixa
+PATCH http://localhost:3000/customer-service/4025c541-0ef8-49b2-a456-796e2de76f8a
+Content-Type: application/json
+
+{
+  "Status": "COMPLETED",
+  "consumedItems": [
+     {
+        "productId": "a4bda88e-b430-4798-9604-fd5c93da1bf8",
+        "usedQuantity": 45
+     }
+  ]
+}
+
+### Get All Products
+GET http://localhost:3000/products
+
+### Ver Balanço Total do Caixa
+GET http://localhost:3000/cash-flow/balance
+
+
+
+### Listar Transações
+GET http://localhost:3000/cash-flow
+
+### Extrato Completo de Comissões do Funcionário 
+### O "?startDate" e "?endDate" são totalmente opcionais. Se não mandar nada, ele puxa do mês atual todo!
+GET http://localhost:3000/employee/b557d13c-108f-40d6-acf1-6257cc9bbe9c/commissions
+
+### Lembretes de Aniversário
+GET http://localhost:3000/client/reminders
+
+### Adicionar Prazo de Validade de 15 Dias para testar o Robô
+PATCH http://localhost:3000/services/bc370a1a-7297-4e86-b099-86d1fe5b4894
+Content-Type: application/json
+
+{
+  "returnDaysReminder": 1
+}
+
+
+////////////////////////////////
+
+### 1. Criar um Serviço chamado "Mágica do Botox" que VENCE em 30 dias (Olha la o returnDaysReminder dele)
+POST http://localhost:3000/services
+Content-Type: application/json
+
+{
+    "name": "Mágica do Botox",
+    "price": 300.00,
+    "estimatedDuration": 60,
+    "returnDaysReminder": 30
+}
+
+775771cf-7a6a-4a5c-9517-480589d0159f
+
+### 2. AGORA - ATENÇÃO - Pegue o ID do Botox gerado acima, troque o 'SUA-CLIENTE' e 'SEU-FUNCIONARIO'
+### Eu coloquei a Data desse atendimento "propositalmente" há mais de 1 mês atrás (Março)!
+POST http://localhost:3000/customer-service
+Content-Type: application/json
+
+{
+    "idClient": "18bbeb01-be12-4ae9-9984-f56c3885f606",
+    "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
+    "Date": "2026-04-01T14:00:00-03:00",
+    "services": [
+        {
+            "serviceId": "775771cf-7a6a-4a5c-9517-480589d0159f"
+        }
+    ]
+}
+
+6bcef61b-5f84-4238-bf6b-c672ed6319b1
+
+### 3. Colar o ID gerado no Passo 2 aqui embaixo e Dar Baixa (COMPLETED)!
+PATCH http://localhost:3000/customer-service/6bcef61b-5f84-4238-bf6b-c672ed6319b1
+Content-Type: application/json
+
+{
+  "Status": "COMPLETED"
+}
+###
+GET http://localhost:3000/client/reminders

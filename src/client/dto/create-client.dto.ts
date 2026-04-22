@@ -4,6 +4,7 @@ import {
   IsNotEmpty,
   MinLength,
   Matches,
+  IsOptional,
 } from 'class-validator';
 
 export class CreateClientDto {
@@ -26,4 +27,16 @@ export class CreateClientDto {
     },
   )
   password: string;
+
+  @IsString()
+  @IsOptional()
+  phone?: string;
+
+  @IsString()
+  @IsOptional()
+  birthDate?: string;
+
+  @IsString()
+  @IsOptional()
+  notes?: string;
 }

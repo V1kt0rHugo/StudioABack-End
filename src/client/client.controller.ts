@@ -25,9 +25,24 @@ export class ClientController {
     return this.clientService.findAll();
   }
 
+  @Get('reminders')
+  getReminders() {
+    return this.clientService.getReminders();
+  }
+
+  @Get('deleted')
+  findAllDeleted() {
+    return this.clientService.findAllDeleted();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.clientService.findOne(id);
+  }
+
+  @Get(':id/history')
+  getHistory(@Param('id') id: string) {
+    return this.clientService.getClientHistory(id);
   }
 
   @Patch(':id')

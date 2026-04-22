@@ -25,6 +25,9 @@ model Client {
   name             String
   email            String            @unique
   password         String
+  phone            String?
+  birthDate        DateTime?
+  notes            String?
   CustomerServices CustomerService[]
 }
 
@@ -51,6 +54,7 @@ model CustomerService {
   TotalValue        Float
   ConsumedItems     ConsumedItems[]
   PerformedServices PerformedServices[]
+  CashTransaction   CashFlowTransaction?
 }
 
 model Products {
@@ -58,7 +62,7 @@ model Products {
   name          String
   price         Float
   brand         String
-  stock         Int
+  stock         Float
   ConsumedItems ConsumedItems[]
 }
 
@@ -67,6 +71,7 @@ model Services {
   name              String
   price             Float
   estimatedDuration Int                 @default(30)
+  returnDaysReminder Int?               @default(0)
   PerformedServices PerformedServices[]
   SkilledEmployees  Employee[]          @relation("EmployeeSkills")
 }
@@ -90,7 +95,7 @@ model ConsumedItems {
   CustomerService   CustomerService @relation(fields: [idCustomerService], references: [id])
   idProduct         String
   Products          Products        @relation(fields: [idProduct], references: [id])
-  usedQuantity      Int
+  usedQuantity      Float
 }
 
 model EmployeeSchedule {
@@ -100,4 +105,19 @@ model EmployeeSchedule {
   dayOfWeek  Int      
   startTime  String   
   endTime    String   
+}
+
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model CashFlowTransaction {
+  id                String           @id @default(uuid())
+  type              TransactionType
+  description       String
+  amount            Float
+  date              DateTime         @default(now())
+  idCustomerService String?          @unique
+  CustomerService   CustomerService? @relation(fields: [idCustomerService], references: [id])
 }

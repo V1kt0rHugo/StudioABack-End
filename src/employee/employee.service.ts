@@ -86,8 +86,25 @@ export class EmployeeService {
       );
     }
 
+    const { skills, schedules, ...restData } = updateEmployeeDto;
+
+    const dataToUpdate: any = { ...restData };
+
+    if (skills) {
+      dataToUpdate.Skills = {
+        set: skills.map((id) => ({ id })),
+      };
+    }
+
+    if (schedules) {
+      dataToUpdate.Schedules = {
+        deleteMany: {}, // Limpa os antigops
+        create: schedules, // Cria os novos enviados
+      };
+    }
+
     await this.prisma.employee.update({
-      data: updateEmployeeDto,
+      data: dataToUpdate,
       where: { id },
     });
 
