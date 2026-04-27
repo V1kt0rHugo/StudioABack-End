@@ -20,6 +20,12 @@ enum ServiceStatus {
   CANCELED
 }
 
+enum Role {
+  MANAGER
+  PROFESSIONAL
+}
+
+
 model Client {
   id               String            @id @default(uuid())
   name             String
@@ -39,9 +45,11 @@ model Employee {
   CPF                  String              @unique
   phone                String
   commissionPercentage Float
+  role                 Role                @default(PROFESSIONAL)
   PerformedServices    PerformedServices[]
   Skills               Services[]          @relation("EmployeeSkills")
   Schedules            EmployeeSchedule[]
+  CashTransactions     CashFlowTransaction[]
 }
 
 model CustomerService {
@@ -87,6 +95,8 @@ model PerformedServices {
   priceCharged         Float
   commissionPercentage Float
   commissionValue      Float
+  isCommissionPaid     Boolean         @default(false)
+  commissionPaidAt     DateTime?
 }
 
 model ConsumedItems {
@@ -120,4 +130,6 @@ model CashFlowTransaction {
   date              DateTime         @default(now())
   idCustomerService String?          @unique
   CustomerService   CustomerService? @relation(fields: [idCustomerService], references: [id])
+  idEmployee        String?
+  Employee          Employee?        @relation(fields: [idEmployee], references: [id])
 }

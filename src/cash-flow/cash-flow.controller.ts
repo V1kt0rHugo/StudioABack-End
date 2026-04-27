@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
 import { CashFlowService } from './cash-flow.service';
 import { CreateCashFlowDto } from './dto/create-cash-flow.dto';
 import { UpdateCashFlowDto } from './dto/update-cash-flow.dto';
@@ -13,8 +13,19 @@ export class CashFlowController {
   }
 
   @Get('balance')
-  getBalance() {
-    return this.cashFlowService.getBalance();
+  getBalance(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.cashFlowService.getBalance(startDate, endDate);
+  }
+
+  @Get('dashboard')
+  getDashboardStats(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.cashFlowService.getDashboardStats(startDate, endDate);
   }
 
   @Get()

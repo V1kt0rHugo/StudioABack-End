@@ -7,6 +7,7 @@ import { CustomerServiceModule } from './customer-service/customer-service.modul
 import { ServicesModule } from './services/services.module';
 import { ProductsModule } from './products/products.module';
 import { CashFlowModule } from './cash-flow/cash-flow.module';
+import { AuthModule } from './auth/auth.module';
 
 @Module({
   imports: [
@@ -16,6 +17,7 @@ import { CashFlowModule } from './cash-flow/cash-flow.module';
     ServicesModule,
     ProductsModule,
     CashFlowModule,
+    AuthModule,
   ],
   providers: [EmployeeService, PrismaService],
 })

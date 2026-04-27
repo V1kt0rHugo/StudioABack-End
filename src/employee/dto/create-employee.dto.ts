@@ -8,8 +8,10 @@ import {
   IsOptional,
   IsArray,
   ValidateNested,
+  IsEnum,
 } from 'class-validator';
 import { Type } from 'class-transformer';
+import { Role } from '@prisma/client';
 
 export class ScheduleDto {
   @IsNumber()
@@ -72,4 +74,8 @@ export class CreateEmployeeDto {
   @ValidateNested({ each: true })
   @Type(() => ScheduleDto)
   schedules?: ScheduleDto[];
+
+  @IsOptional()
+  @IsEnum(Role, { message: 'O cargo deve ser MANAGER ou PROFESSIONAL' })
+  role?: Role;
 }

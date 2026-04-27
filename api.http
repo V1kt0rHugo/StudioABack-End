@@ -1,252 +1,100 @@
-### Create Client
-POST http://localhost:3000/client
-Content-Type: application/json
-
-{
-    "name": "Dulcineia",
-    "email": "UmbrellaKindred2@gmail.com",
-    "password": "FuckSancho123!",
-    "phone": "(13) 99999-9999",
-    "birthDate": "2000-01-01",
-    "notes": "Cliente VIP"
-}
+@baseUrl = http://localhost:3000
+@ClienteId = 20220005-070b-49c9-8b16-610113a83849
+@managerId = 8ec3af97-53dd-4a73-b5ad-95ac60024c94
+@JeniferId = b557d13c-108f-40d6-acf1-6257cc9bbe9c
+@EscovaId = ac3c0360-a3fc-4a73-a458-6782883b7234
+@TinturaId = dc9e4cfc-1d11-45a1-ae1f-b78af5ab31eb
+@CorteId = 2a467d8e-5996-4be4-a405-2209f5f0a145
+@ProgressivaId = bc370a1a-7297-4e86-b099-86d1fe5b4894
+@JeniferToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImplbmlmZXJAc3R1ZGlvLmNvbSIsInN1YiI6ImI1NTdkMTNjLTEwOGYtNDBkNi1hY2YxLTYyNTdjYzliYmU5YyIsInJvbGUiOiJQUk9GRVNTSU9OQUwiLCJpYXQiOjE3NzczMTYwODcsImV4cCI6MTc3NzM0NDg4N30.q-rKHV9i07OFDx9jUmfgSDN6dqpR0bwP_-SWq93YkzY
+@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZpY3Rvcmh1Z29Ac3R1ZGlvYS5jb20iLCJzdWIiOiI4ZWMzYWY5Ny01M2RkLTRhNzMtYjVhZC05NWFjNjAwMjRjOTQiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3NzMxNjIwOSwiZXhwIjoxNzc3MzQ1MDA5fQ.XeSUwUQ8zU0RyUtzK7f_fzlN-d9DvWcpip2EUAvNiLI
+### Get All Employees
+GET {{baseUrl}}/employee
 
 ### Get All Clients
-GET http://localhost:3000/client
-
-### Get Client by ID
-GET http://localhost:3000/client/2c7f2e7b-4862-4762-a09f-d9873a106ced
-
-### Update Client
-PATCH http://localhost:3000/client/9292b61d-fc9c-432b-be2d-e3433e2fcacd
-Content-Type: application/json
-
-{
-    "name": "Glory Mary_UwU",
-    "email": "GloryMary@gmail.com",
-    "password": "Beautiful123",
-    "phone": "(13) 99999-9999",
-    "birthDate": "2000-01-01",
-    "notes": "Cliente VIP"
-}
-
-### Delete Client
-DELETE http://localhost:3000/client/18bbeb01-be12-4ae9-9984-f56c3885f606
-
-### Create Employee
-POST http://localhost:3000/employee
-Content-Type: application/json
-
-{
-    "name": "Jenifer",
-    "email": "jenifer@studio.com",
-    "password": "Password123!",
-    "CPF": "123.456.789-00",
-    "phone": "(13) 99999-9999",
-    "commissionPercentage": 50,
-    "skills": [
-      "bc370a1a-7297-4e86-b099-86d1fe5b4894",
-      "ac3c0360-a3fc-4a73-a458-6782883b7234",
-      "dc9e4cfc-1d11-45a1-ae1f-b78af5ab31eb"
-    ],
-    "schedules": [
-      { "dayOfWeek": 2, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 2, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 3, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 3, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 4, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 4, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 5, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 5, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 6, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 6, "startTime": "13:00", "endTime": "18:00" }
-    ]
-}
-
-###update employee
-PATCH http://localhost:3000/employee/b557d13c-108f-40d6-acf1-6257cc9bbe9c
-Content-Type: application/json
-
-{
-    "name": "Jenifer",
-    "email": "jenifer@studio.com",
-    "password": "Password123!",
-    "CPF": "123.456.789-00",
-    "phone": "(13) 99999-9999",
-    "commissionPercentage": 50,
-    "skills": [
-      "bc370a1a-7297-4e86-b099-86d1fe5b4894",
-      "ac3c0360-a3fc-4a73-a458-6782883b7234",
-      "dc9e4cfc-1d11-45a1-ae1f-b78af5ab31eb",
-      "775771cf-7a6a-4a5c-9517-480589d0159f"
-    ],
-    "schedules": [
-      { "dayOfWeek": 2, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 2, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 3, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 3, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 4, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 4, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 5, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 5, "startTime": "13:00", "endTime": "18:00" },
-      { "dayOfWeek": 6, "startTime": "09:00", "endTime": "11:00" },
-      { "dayOfWeek": 6, "startTime": "13:00", "endTime": "18:00" }
-    ]
-}
-
-
-### Create Customer Service
-POST http://localhost:3000/customer-service
-Content-Type: application/json
-
-{
-    "idClient": "20220005-070b-49c9-8b16-610113a83849",
-    "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
-    "Date": "2026-04-21T09:00:00-03:00",
-    "services": [
-        {
-            "serviceId": "bc370a1a-7297-4e86-b099-86d1fe5b4894",
-            "customPrice": 50
-        },
-        {
-            "serviceId": "ac3c0360-a3fc-4a73-a458-6782883b7234"
-        }
-    ]
-}
-### Create Customer Service
-POST http://localhost:3000/customer-service
-Content-Type: application/json
-
-{
-    "idClient": "18bbeb01-be12-4ae9-9984-f56c3885f606",
-    "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
-    "Date": "2026-04-21T09:30:00-17:00",
-    "services": [
-        {
-            "serviceId": "bc370a1a-7297-4e86-b099-86d1fe5b4894"
-        }
-    ]
-}
-
-### Get All Customer Services
-GET http://localhost:3000/customer-service
-
-### Create Service
-POST http://localhost:3000/services
-Content-Type: application/json
-
-{
-    "name": "Corte",
-    "price": 50.00,
-    "estimatedDuration": 30
-}
+GET {{baseUrl}}/client
 
 ### Get All Services
-GET http://localhost:3000/services
-
-###get all employees
-GET http://localhost:3000/employee
-
-### Delete Service
-DELETE http://localhost:3000/services/61996bff-b108-45d5-b485-c78c625a15f3
-
-### Get All Deleted Clients
-GET http://localhost:3000/client/deleted
-
-### Get Client History
-GET http://localhost:3000/client/18bbeb01-be12-4ae9-9984-f56c3885f606/history
-
-### Create Product (Cadastrando produto em ML)
-POST http://localhost:3000/products
-Content-Type: application/json
-
-{
-    "name": "Progressiva Liss Extreme",
-    "price": 250.00,
-    "brand": "Loreal Professional",
-    "stock": 1000.5
-}
-
-### Fechar Atendimento e Dar Baixa
-PATCH http://localhost:3000/customer-service/4025c541-0ef8-49b2-a456-796e2de76f8a
-Content-Type: application/json
-
-{
-  "Status": "COMPLETED",
-  "consumedItems": [
-     {
-        "productId": "a4bda88e-b430-4798-9604-fd5c93da1bf8",
-        "usedQuantity": 45
-     }
-  ]
-}
+GET {{baseUrl}}/services
 
 ### Get All Products
-GET http://localhost:3000/products
+GET {{baseUrl}}/products
 
-### Ver Balanço Total do Caixa
-GET http://localhost:3000/cash-flow/balance
+### Get All Customer Services
+GET {{baseUrl}}/customer-service
 
+### Get All Cash Flow Transactions
+GET {{baseUrl}}/cash-flow
 
+### Get All Cash Flow Balance (Total)
+GET {{baseUrl}}/cash-flow/balance
 
-### Listar Transações
-GET http://localhost:3000/cash-flow
+### Balanço do Dia (Exemplo)
+GET {{baseUrl}}/cash-flow/balance?startDate=2026-04-27&endDate=2026-04-27
 
-### Extrato Completo de Comissões do Funcionário 
-### O "?startDate" e "?endDate" são totalmente opcionais. Se não mandar nada, ele puxa do mês atual todo!
-GET http://localhost:3000/employee/b557d13c-108f-40d6-acf1-6257cc9bbe9c/commissions
+### Lucro do Mês de Abril (Exemplo)
+GET {{baseUrl}}/cash-flow/balance?startDate=2026-04-01&endDate=2026-04-30
 
-### Lembretes de Aniversário
-GET http://localhost:3000/client/reminders
+### Get All Cash Flow Transactions
+GET {{baseUrl}}/cash-flow
 
-### Adicionar Prazo de Validade de 15 Dias para testar o Robô
-PATCH http://localhost:3000/services/bc370a1a-7297-4e86-b099-86d1fe5b4894
+### Create Customer Service
+POST {{baseUrl}}/customer-service
 Content-Type: application/json
 
 {
-  "returnDaysReminder": 1
-}
-
-
-////////////////////////////////
-
-### 1. Criar um Serviço chamado "Mágica do Botox" que VENCE em 30 dias (Olha la o returnDaysReminder dele)
-POST http://localhost:3000/services
-Content-Type: application/json
-
-{
-    "name": "Mágica do Botox",
-    "price": 300.00,
-    "estimatedDuration": 60,
-    "returnDaysReminder": 30
-}
-
-775771cf-7a6a-4a5c-9517-480589d0159f
-
-### 2. AGORA - ATENÇÃO - Pegue o ID do Botox gerado acima, troque o 'SUA-CLIENTE' e 'SEU-FUNCIONARIO'
-### Eu coloquei a Data desse atendimento "propositalmente" há mais de 1 mês atrás (Março)!
-POST http://localhost:3000/customer-service
-Content-Type: application/json
-
-{
-    "idClient": "18bbeb01-be12-4ae9-9984-f56c3885f606",
-    "employeeId": "b557d13c-108f-40d6-acf1-6257cc9bbe9c",
-    "Date": "2026-04-01T14:00:00-03:00",
+    "idClient": "{{ClienteId}}",
+    "employeeId": "{{JeniferId}}",
+    "Date": "2026-04-29T17:00:00-03:00",
     "services": [
-        {
-            "serviceId": "775771cf-7a6a-4a5c-9517-480589d0159f"
-        }
-    ]
+      {"serviceId": "{{EscovaId}}"},
+      {"serviceId": "{{ProgressivaId}}"}
+    
+      ]
 }
 
-6bcef61b-5f84-4238-bf6b-c672ed6319b1
-
-### 3. Colar o ID gerado no Passo 2 aqui embaixo e Dar Baixa (COMPLETED)!
-PATCH http://localhost:3000/customer-service/6bcef61b-5f84-4238-bf6b-c672ed6319b1
+### Finalizar Atendimento (Gera INCOME no Caixa)
+PATCH {{baseUrl}}/customer-service/c24b408c-eb6d-4320-a9a8-89d22852a91f
 Content-Type: application/json
 
 {
   "Status": "COMPLETED"
+} 
+
+### ========================================
+### AUTENTICAÇÃO E SEGURANÇA
+### ========================================
+
+### 1. Fazer Login (Gerar Token)
+# Mude o email e a senha para um usuário real do seu banco
+# Após executar, copie o "access_token" da resposta e cole na variável @token abaixo
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "victorhugo@studioa.com",
+    "password": "SenhaForte@123!"
 }
-###
-GET http://localhost:3000/client/reminders
+
+### Variável do Token (Cole o access_token gerado acima aqui)
+
+### 2. Pagar Comissão (Requer Token do Gerente)
+POST {{baseUrl}}/employee/pay-commissions
+Authorization: Bearer {{ManagerToken}}
+Content-Type: application/json
+
+{
+    "employeeId": "{{JeniferId}}"
+}
+
+### ========================================
+### OUTRAS OPERAÇÕES
+### ========================================
+
+### Transformar Funcionário em Gerente
+PATCH {{baseUrl}}/employee/{{managerId}}
+Content-Type: application/json
+
+{
+    "role": "MANAGER"
+}

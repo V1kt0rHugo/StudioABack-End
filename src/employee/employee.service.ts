@@ -1,12 +1,17 @@
-import { Injectable } from '@nestjs/common';
+import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { PayCommissionsDto } from './dto/pay-commissions.dto';
 import { PrismaService } from 'src/database/prisma.service';
+import { CashFlowService } from 'src/cash-flow/cash-flow.service';
 import * as bcrypt from 'bcrypt';
 
 @Injectable()
 export class EmployeeService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private cashFlowService: CashFlowService,
+  ) { }
   async create(createEmployeeDto: CreateEmployeeDto) {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createEmployeeDto.password, salt);
@@ -72,6 +77,12 @@ export class EmployeeService {
     });
   }
 
+  async findByEmailWithPassword(email: string) {
+    return this.prisma.employee.findUnique({
+      where: { email },
+    });
+  }
+
   async update(id: string, updateEmployeeDto: UpdateEmployeeDto) {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
@@ -131,7 +142,12 @@ export class EmployeeService {
     return { message: 'Funcionário deletado com sucesso' };
   }
 
-  async getCommissions(id: string, startDate?: string, endDate?: string) {
+  async getCommissions(
+    id: string, 
+    startDate?: string, 
+    endDate?: string, 
+    paymentStatus?: 'PENDING' | 'PAID' | 'ALL'
+  ) {
     // 1. Verifica se o funcionário existe no banco de dados
     const employee = await this.prisma.employee.findUnique({
       where: { id },
@@ -142,23 +158,33 @@ export class EmployeeService {
     }
 
     // 2. Definindo o período da consulta
-    // Se a data não for fornecida pelo front-end, define o mês atual automaticamente
-    const now = new Date();
-    const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
-    const end = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const whereClause: any = {
+      idEmployee: id,
+      CustomerService: {
+        Status: 'COMPLETED',
+      },
+    };
+
+    if (startDate || endDate) {
+      const now = new Date();
+      const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+      
+      whereClause.CustomerService.Date = {
+        gte: start,
+        lte: end,
+      };
+    }
+
+    if (paymentStatus === 'PENDING') {
+      whereClause.isCommissionPaid = false;
+    } else if (paymentStatus === 'PAID') {
+      whereClause.isCommissionPaid = true;
+    }
 
     // 3. Busca inteligente no banco de dados com Prisma
     const performedServices = await this.prisma.performedServices.findMany({
-      where: {
-        idEmployee: id, // Tem que ser serviço prestado por esse funcionário
-        CustomerService: {
-          Status: 'COMPLETED', // Regra de Ouro: Só comissiona serviços onde o Atendimento foi concluído/pago
-          Date: {
-            gte: start, // Maior ou igual à data de início...
-            lte: end,   // ...e menor ou igual à data de fim
-          },
-        },
-      },
+      where: whereClause,
       include: {
         Service: true, // "Puxa" as informações do Serviço (pra ter a porcentagem da comissão)
         CustomerService: true, // "Puxa" as informações do Atendimento (pra ter a data e hora verdadeira)
@@ -185,6 +211,8 @@ export class EmployeeService {
         priceCharged: ps.priceCharged,
         commissionPercentage: ps.commissionPercentage,
         commissionValue: ps.commissionValue,
+        isCommissionPaid: ps.isCommissionPaid,
+        commissionPaidAt: ps.commissionPaidAt,
         date: ps.CustomerService.Date,
         customerServiceId: ps.CustomerService.id,
       };
@@ -195,11 +223,94 @@ export class EmployeeService {
       employeeId: id,
       employeeName: employee.name,
       period: {
-        start, // Exibe o começo do range consultado
-        end,   // Exibe o fim do range consultado
+        start: startDate || 'Histórico Todo',
+        end: endDate || 'Histórico Todo',
       },
       totalCommission, // A Soma Final
       details: detailedCommissions, // A lista individual pra tela montar o Extrato
     };
+  }
+
+  async payCommissions(dto: PayCommissionsDto) {
+    // A Autorização agora é feita pelo RolesGuard na rota, não precisamos checar o requesterId manualmente
+
+    // 2. Continua o fluxo normal
+    const whereClause: any = {
+      isCommissionPaid: false,
+      CustomerService: { Status: 'COMPLETED' },
+    };
+
+    if (dto.performedServiceIds && dto.performedServiceIds.length > 0) {
+      whereClause.id = { in: dto.performedServiceIds };
+    } else if (dto.employeeId) {
+      whereClause.idEmployee = dto.employeeId;
+    }
+
+    const pendingServices = await this.prisma.performedServices.findMany({
+      where: whereClause,
+      include: { Employee: true },
+    });
+
+    if (pendingServices.length === 0) {
+      throw new BadRequestException('Nenhuma comissão pendente encontrada para os critérios informados.');
+    }
+
+    // Agrupar por funcionário para criar lançamentos claros no caixa
+    const totalsByEmployee = new Map<string, { employeeName: string; totalAmount: number }>();
+    const serviceIdsToUpdate: string[] = [];
+    let totalToPay = 0;
+
+    for (const service of pendingServices) {
+      serviceIdsToUpdate.push(service.id);
+      totalToPay += service.commissionValue;
+
+      const empId = service.idEmployee;
+      if (!totalsByEmployee.has(empId)) {
+        totalsByEmployee.set(empId, { employeeName: service.Employee.name, totalAmount: 0 });
+      }
+      totalsByEmployee.get(empId)!.totalAmount += service.commissionValue;
+    }
+
+    // 3. Validação de Saldo: O caixa tem dinheiro?
+    const currentBalance = await this.cashFlowService.getBalance();
+    if (currentBalance.balance < totalToPay) {
+      throw new BadRequestException(
+        `Saldo insuficiente no caixa para realizar este pagamento. Saldo atual: R$ ${currentBalance.balance.toFixed(2)}. Valor necessário: R$ ${totalToPay.toFixed(2)}.`,
+      );
+    }
+
+    const now = new Date();
+
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Atualizar o status das comissões para pagas
+      await tx.performedServices.updateMany({
+        where: { id: { in: serviceIdsToUpdate } },
+        data: {
+          isCommissionPaid: true,
+          commissionPaidAt: now,
+        },
+      });
+
+      // 2. Criar as saídas (DESPESAS) no fluxo de caixa agrupadas por funcionário
+      // Agora vinculando ao idEmployee para rastreabilidade
+      for (const [employeeId, entry] of totalsByEmployee.entries()) {
+        await tx.cashFlowTransaction.create({
+          data: {
+            type: 'EXPENSE',
+            description: `Pagamento de Comissões - ${entry.employeeName}`,
+            amount: entry.totalAmount,
+            date: now,
+            idEmployee: employeeId,
+          },
+        });
+      }
+
+      return {
+        message: 'Comissões pagas com sucesso e registradas no fluxo de caixa.',
+        paidServicesCount: serviceIdsToUpdate.length,
+        totalPaid: totalToPay,
+        remainingBalance: currentBalance.balance - totalToPay,
+      };
+    });
   }
 }
