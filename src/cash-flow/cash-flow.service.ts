@@ -1,6 +1,7 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { CreateCashFlowDto } from './dto/create-cash-flow.dto';
 import { UpdateCashFlowDto } from './dto/update-cash-flow.dto';
+import { CashFlowFilterDto } from './dto/cash-flow-filter.dto';
 import { PrismaService } from 'src/database/prisma.service';
 
 @Injectable()
@@ -13,10 +14,40 @@ export class CashFlowService {
     });
   }
 
-  async findAll() {
-    return await this.prisma.cashFlowTransaction.findMany({
-      orderBy: { date: 'desc' }
-    });
+  async findAll(filterDto: CashFlowFilterDto) {
+    const { page = 1, limit = 50, startDate, endDate } = filterDto;
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+    if (startDate || endDate) {
+      whereClause.date = {};
+      if (startDate) whereClause.date.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        if (endDate.length <= 10) end.setHours(23, 59, 59, 999);
+        whereClause.date.lte = end;
+      }
+    }
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.cashFlowTransaction.count({ where: whereClause }),
+      this.prisma.cashFlowTransaction.findMany({
+        where: whereClause,
+        orderBy: { date: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   async getBalance(startDate?: string, endDate?: string) {
@@ -30,8 +61,9 @@ export class CashFlowService {
       if (endDate) {
         // Garantir que o endDate cubra até o fim do dia (23:59:59) se não houver hora informada
         const end = new Date(endDate);
-        if (endDate.length <= 10) { // formato YYYY-MM-DD
-           end.setHours(23, 59, 59, 999);
+        if (endDate.length <= 10) {
+          // formato YYYY-MM-DD
+          end.setHours(23, 59, 59, 999);
         }
         whereClause.date.lte = end;
       }

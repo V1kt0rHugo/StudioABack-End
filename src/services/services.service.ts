@@ -2,10 +2,11 @@ import { Injectable } from '@nestjs/common';
 import { CreateServiceDto } from './dto/create-service.dto';
 import { UpdateServiceDto } from './dto/update-service.dto';
 import { PrismaService } from 'src/database/prisma.service';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class ServicesService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
   async create(createServiceDto: CreateServiceDto) {
     const service = await this.prisma.services.create({
       data: {
@@ -16,8 +17,27 @@ export class ServicesService {
     return service;
   }
 
-  findAll() {
-    return this.prisma.services.findMany();
+  async findAll(paginationDto: PaginationDto) {
+    const { page = 1, limit = 50 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.services.count(),
+      this.prisma.services.findMany({
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   findOne(id: string) {

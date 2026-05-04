@@ -1,8 +1,25 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, Query } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Patch,
+  Param,
+  Delete,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { CashFlowService } from './cash-flow.service';
 import { CreateCashFlowDto } from './dto/create-cash-flow.dto';
 import { UpdateCashFlowDto } from './dto/update-cash-flow.dto';
+import { CashFlowFilterDto } from './dto/cash-flow-filter.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
+@UseGuards(JwtAuthGuard, RolesGuard)
+@Roles(Role.MANAGER)
 @Controller('cash-flow')
 export class CashFlowController {
   constructor(private readonly cashFlowService: CashFlowService) {}
@@ -29,8 +46,8 @@ export class CashFlowController {
   }
 
   @Get()
-  findAll() {
-    return this.cashFlowService.findAll();
+  findAll(@Query() filterDto: CashFlowFilterDto) {
+    return this.cashFlowService.findAll(filterDto);
   }
 
   @Get(':id')
@@ -39,7 +56,10 @@ export class CashFlowController {
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateCashFlowDto: UpdateCashFlowDto) {
+  update(
+    @Param('id') id: string,
+    @Body() updateCashFlowDto: UpdateCashFlowDto,
+  ) {
     return this.cashFlowService.update(id, updateCashFlowDto);
   }
 

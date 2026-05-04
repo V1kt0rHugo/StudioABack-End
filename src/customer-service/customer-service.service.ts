@@ -1,6 +1,11 @@
-import { Injectable, NotFoundException, BadRequestException } from '@nestjs/common';
+import {
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { CreateCustomerServiceDto } from './dto/create-customer-service.dto';
 import { UpdateCustomerServiceDto } from './dto/update-customer-service.dto';
+import { CustomerServiceFilterDto } from './dto/customer-service-filter.dto';
 import { PrismaService } from 'src/database/prisma.service';
 
 export interface CommissionResult {
@@ -24,7 +29,7 @@ export interface CommissionByServiceResult {
 
 @Injectable()
 export class CustomerServiceService {
-  constructor(private prisma: PrismaService) { }
+  constructor(private prisma: PrismaService) {}
 
   async create(createCustomerServiceDto: CreateCustomerServiceDto) {
     const client = await this.prisma.client.findUnique({
@@ -99,7 +104,10 @@ export class CustomerServiceService {
     // Validação de Escala de Horário (Schedule)
     const dayOfWeek = appointmentDate.getDay();
     const startHours = appointmentDate.getHours().toString().padStart(2, '0');
-    const startMinutes = appointmentDate.getMinutes().toString().padStart(2, '0');
+    const startMinutes = appointmentDate
+      .getMinutes()
+      .toString()
+      .padStart(2, '0');
     const endHours = endTime.getHours().toString().padStart(2, '0');
     const endMinutes = endTime.getMinutes().toString().padStart(2, '0');
 
@@ -162,8 +170,43 @@ export class CustomerServiceService {
     return customerService;
   }
 
-  findAll() {
-    return this.prisma.customerService.findMany();
+  async findAll(filterDto: CustomerServiceFilterDto) {
+    const { page = 1, limit = 50, startDate, endDate, status } = filterDto;
+    const skip = (page - 1) * limit;
+
+    const whereClause: any = {};
+    if (status) {
+      whereClause.Status = status;
+    }
+    if (startDate || endDate) {
+      whereClause.Date = {};
+      if (startDate) whereClause.Date.gte = new Date(startDate);
+      if (endDate) {
+        const end = new Date(endDate);
+        if (endDate.length <= 10) end.setHours(23, 59, 59, 999);
+        whereClause.Date.lte = end;
+      }
+    }
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.customerService.count({ where: whereClause }),
+      this.prisma.customerService.findMany({
+        where: whereClause,
+        orderBy: { Date: 'desc' },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
+      },
+    };
   }
 
   findOne(id: string) {
@@ -185,12 +228,23 @@ export class CustomerServiceService {
 
     return await this.prisma.$transaction(async (tx) => {
       // Baixa de Estoque Opcional (Se houveram produtos consumidos)
-      if (newStatus === 'COMPLETED' && oldStatus !== 'COMPLETED' && updateCustomerServiceDto.consumedItems) {
+      if (
+        newStatus === 'COMPLETED' &&
+        oldStatus !== 'COMPLETED' &&
+        updateCustomerServiceDto.consumedItems
+      ) {
         for (const item of updateCustomerServiceDto.consumedItems) {
-          const product = await tx.products.findUnique({ where: { id: item.productId } });
-          if (!product) throw new BadRequestException(`Produto ${item.productId} não encontrado.`);
+          const product = await tx.products.findUnique({
+            where: { id: item.productId },
+          });
+          if (!product)
+            throw new BadRequestException(
+              `Produto ${item.productId} não encontrado.`,
+            );
           if (product.stock < item.usedQuantity) {
-            throw new BadRequestException(`Estoque insuficiente para o produto ${product.name}. Disponível: ${product.stock}`);
+            throw new BadRequestException(
+              `Estoque insuficiente para o produto ${product.name}. Disponível: ${product.stock}`,
+            );
           }
 
           // Atualizar estoque e gravar item consumido
@@ -211,17 +265,16 @@ export class CustomerServiceService {
 
       // FASE 3: Lançamento Automático de Receita no Fluxo de Caixa (Ocorre sempre que o Status for finalizado!)
       if (newStatus === 'COMPLETED' && oldStatus !== 'COMPLETED') {
-        
         // Retornando à estratégia Faturamento Bruto
         // O dinheiro cobrado pelo Terminal do Caixa no salão pertence integralmente ao Salão (Receita Bruta).
         // Posteriormente o caixa executará saídas (EXPENSES) para quitar a Folha de Pagamento baseando-se no relatório do funcionário.
         await tx.cashFlowTransaction.create({
           data: {
-             type: 'INCOME',
-             description: `Faturamento - Atendimento #${id.split('-')[0].toUpperCase()}`,
-             amount: existing.TotalValue,
-             idCustomerService: id
-          }
+            type: 'INCOME',
+            description: `Faturamento - Atendimento #${id.split('-')[0].toUpperCase()}`,
+            amount: existing.TotalValue,
+            idCustomerService: id,
+          },
         });
       }
 
@@ -234,10 +287,10 @@ export class CustomerServiceService {
             data: { stock: { increment: consumed.usedQuantity } },
           });
         }
-        
+
         // FASE 3: Estorno Financeiro - Remove faturamento fantasma
         await tx.cashFlowTransaction.deleteMany({
-           where: { idCustomerService: id }
+          where: { idCustomerService: id },
         });
       }
 

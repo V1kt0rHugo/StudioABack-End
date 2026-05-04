@@ -1,7 +1,15 @@
 import { PartialType } from '@nestjs/swagger';
 import { CreateCustomerServiceDto } from './create-customer-service.dto';
 import { ServiceStatus } from '@prisma/client';
-import { IsEnum, IsOptional, IsArray, ValidateNested, IsString, IsUUID, IsNumber } from 'class-validator';
+import {
+  IsEnum,
+  IsOptional,
+  IsArray,
+  ValidateNested,
+  IsString,
+  IsUUID,
+  IsNumber,
+} from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class ConsumedItemDto {

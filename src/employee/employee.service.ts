@@ -5,13 +5,14 @@ import { PayCommissionsDto } from './dto/pay-commissions.dto';
 import { PrismaService } from 'src/database/prisma.service';
 import { CashFlowService } from 'src/cash-flow/cash-flow.service';
 import * as bcrypt from 'bcrypt';
+import { PaginationDto } from '../common/dto/pagination.dto';
 
 @Injectable()
 export class EmployeeService {
   constructor(
     private prisma: PrismaService,
     private cashFlowService: CashFlowService,
-  ) { }
+  ) {}
   async create(createEmployeeDto: CreateEmployeeDto) {
     const salt = await bcrypt.genSalt();
     const hashedPassword = await bcrypt.hash(createEmployeeDto.password, salt);
@@ -44,19 +45,38 @@ export class EmployeeService {
     return employee;
   }
 
-  findAll() {
-    return this.prisma.employee.findMany({
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        CPF: true,
-        phone: true,
-        commissionPercentage: true,
-        Skills: true,
-        Schedules: true,
+  async findAll(paginationDto: PaginationDto) {
+    const { page = 1, limit = 50 } = paginationDto;
+    const skip = (page - 1) * limit;
+
+    const [total, data] = await this.prisma.$transaction([
+      this.prisma.employee.count(),
+      this.prisma.employee.findMany({
+        select: {
+          id: true,
+          name: true,
+          email: true,
+          CPF: true,
+          phone: true,
+          commissionPercentage: true,
+          role: true,
+          Skills: true,
+          Schedules: true,
+        },
+        skip,
+        take: limit,
+      }),
+    ]);
+
+    return {
+      data,
+      meta: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit),
       },
-    });
+    };
   }
 
   findOne(id: string) {
@@ -143,10 +163,10 @@ export class EmployeeService {
   }
 
   async getCommissions(
-    id: string, 
-    startDate?: string, 
-    endDate?: string, 
-    paymentStatus?: 'PENDING' | 'PAID' | 'ALL'
+    id: string,
+    startDate?: string,
+    endDate?: string,
+    paymentStatus?: 'PENDING' | 'PAID' | 'ALL',
   ) {
     // 1. Verifica se o funcionário existe no banco de dados
     const employee = await this.prisma.employee.findUnique({
@@ -167,9 +187,13 @@ export class EmployeeService {
 
     if (startDate || endDate) {
       const now = new Date();
-      const start = startDate ? new Date(startDate) : new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = endDate ? new Date(endDate) : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
-      
+      const start = startDate
+        ? new Date(startDate)
+        : new Date(now.getFullYear(), now.getMonth(), 1);
+      const end = endDate
+        ? new Date(endDate)
+        : new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+
       whereClause.CustomerService.Date = {
         gte: start,
         lte: end,
@@ -252,11 +276,16 @@ export class EmployeeService {
     });
 
     if (pendingServices.length === 0) {
-      throw new BadRequestException('Nenhuma comissão pendente encontrada para os critérios informados.');
+      throw new BadRequestException(
+        'Nenhuma comissão pendente encontrada para os critérios informados.',
+      );
     }
 
     // Agrupar por funcionário para criar lançamentos claros no caixa
-    const totalsByEmployee = new Map<string, { employeeName: string; totalAmount: number }>();
+    const totalsByEmployee = new Map<
+      string,
+      { employeeName: string; totalAmount: number }
+    >();
     const serviceIdsToUpdate: string[] = [];
     let totalToPay = 0;
 
@@ -266,7 +295,10 @@ export class EmployeeService {
 
       const empId = service.idEmployee;
       if (!totalsByEmployee.has(empId)) {
-        totalsByEmployee.set(empId, { employeeName: service.Employee.name, totalAmount: 0 });
+        totalsByEmployee.set(empId, {
+          employeeName: service.Employee.name,
+          totalAmount: 0,
+        });
       }
       totalsByEmployee.get(empId)!.totalAmount += service.commissionValue;
     }

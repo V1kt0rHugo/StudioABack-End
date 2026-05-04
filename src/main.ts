@@ -6,8 +6,16 @@ import { SecurityObscurityFilter } from './common/filters/security-obscurity.fil
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
-  app.enableCors();
-  app.useGlobalPipes(new ValidationPipe());
+  app.enableCors({
+    origin: ['http://localhost:3000', 'http://localhost:3001'], // Adicione domínios de produção aqui futuramente
+    credentials: true,
+  });
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+    }),
+  );
   app.useGlobalFilters(new SecurityObscurityFilter());
   const swaggerConfig = new DocumentBuilder()
     .setTitle('API do Studio A')

@@ -6,10 +6,15 @@ import {
   Patch,
   Param,
   Delete,
+  UseGuards,
+  Query,
 } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
+import { ClientFilterDto } from './dto/client-filter.dto';
+import { VerifyEmailDto } from './dto/verify-email.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
 @Controller('client')
 export class ClientController {
@@ -20,31 +25,50 @@ export class ClientController {
     return this.clientService.create(createClientDto);
   }
 
-  @Get()
-  findAll() {
-    return this.clientService.findAll();
+  @Post('verify')
+  async verifyEmail(@Body() verifyEmailDto: VerifyEmailDto) {
+    return this.clientService.verifyEmail(
+      verifyEmailDto.email,
+      verifyEmailDto.code,
+    );
   }
 
+  @Post('resend-verification')
+  async resendVerification(@Body() body: { email: string }) {
+    return this.clientService.resendVerificationCode(body.email);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get()
+  findAll(@Query() filterDto: ClientFilterDto) {
+    return this.clientService.findAll(filterDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Get('reminders')
   getReminders() {
     return this.clientService.getReminders();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get('deleted')
   findAllDeleted() {
     return this.clientService.findAllDeleted();
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.clientService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id/history')
   getHistory(@Param('id') id: string) {
     return this.clientService.getClientHistory(id);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Patch(':id')
   async update(
     @Param('id') id: string,
@@ -53,6 +77,7 @@ export class ClientController {
     return this.clientService.update(id, updateClientDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.clientService.remove(id);

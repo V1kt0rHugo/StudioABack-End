@@ -13,6 +13,7 @@ import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
 import { PayCommissionsDto } from './dto/pay-commissions.dto';
+import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -20,16 +21,18 @@ import { Role } from '@prisma/client';
 
 @Controller('employee')
 export class EmployeeController {
-  constructor(private readonly employeeService: EmployeeService) { }
+  constructor(private readonly employeeService: EmployeeService) {}
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER)
   @Post()
   create(@Body() createEmployeeDto: CreateEmployeeDto) {
     return this.employeeService.create(createEmployeeDto);
   }
 
   @Get()
-  findAll() {
-    return this.employeeService.findAll();
+  findAll(@Query() paginationDto: PaginationDto) {
+    return this.employeeService.findAll(paginationDto);
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)
@@ -39,11 +42,14 @@ export class EmployeeController {
     return this.employeeService.payCommissions(payCommissionsDto);
   }
 
+  @UseGuards(JwtAuthGuard)
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.employeeService.findOne(id);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER)
   @Patch(':id')
   update(
     @Param('id') id: string,
@@ -52,6 +58,8 @@ export class EmployeeController {
     return this.employeeService.update(id, updateEmployeeDto);
   }
 
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER)
   @Delete(':id')
   remove(@Param('id') id: string) {
     return this.employeeService.remove(id);
@@ -59,6 +67,7 @@ export class EmployeeController {
 
   // Rota para calcular comissões de um funcionário específico
   // Exemplo de chamada: GET http://localhost:3000/employee/123/commissions?startDate=2026-04-01&endDate=2026-04-30
+  @UseGuards(JwtAuthGuard)
   @Get(':id/commissions')
   getCommissions(
     @Param('id') id: string, // Pega o ID da URL
@@ -66,6 +75,11 @@ export class EmployeeController {
     @Query('endDate') endDate?: string, // Opcional
     @Query('status') paymentStatus?: 'PENDING' | 'PAID' | 'ALL', // Filtro mágico
   ) {
-    return this.employeeService.getCommissions(id, startDate, endDate, paymentStatus);
+    return this.employeeService.getCommissions(
+      id,
+      startDate,
+      endDate,
+      paymentStatus,
+    );
   }
 }

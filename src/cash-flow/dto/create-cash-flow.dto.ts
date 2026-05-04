@@ -1,4 +1,11 @@
-import { IsString, IsNumber, IsEnum, IsNotEmpty, IsOptional, IsUUID } from 'class-validator';
+import {
+  IsString,
+  IsNumber,
+  IsEnum,
+  IsNotEmpty,
+  IsOptional,
+  IsUUID,
+} from 'class-validator';
 import { TransactionType } from '@prisma/client';
 
 export class CreateCashFlowDto {
