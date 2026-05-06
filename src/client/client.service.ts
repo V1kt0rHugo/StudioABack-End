@@ -3,6 +3,7 @@ import {
   ConflictException,
   BadRequestException,
 } from '@nestjs/common';
+import { Cron, CronExpression } from '@nestjs/schedule';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientFilterDto } from './dto/client-filter.dto';
@@ -352,5 +353,22 @@ export class ClientService {
 
     // Ordena do cliente mais atrasado de todos (maior daysPassed) para o mais recente
     return reminders.sort((a, b) => b.daysPassed - a.daysPassed);
+  }
+
+  @Cron(CronExpression.EVERY_HOUR)
+  async removeUnverifiedClients() {
+    const oneDayAgo = new Date(Date.now() - 24 * 60 * 60 * 1000);
+    const result = await this.prisma.client.deleteMany({
+      where: {
+        isEmailVerified: false,
+        createdAt: {
+          lt: oneDayAgo,
+        },
+      },
+    });
+
+    if (result.count > 0) {
+      console.log(`[Cron] Apagados ${result.count} clientes com e-mail não verificado há mais de 24h.`);
+    }
   }
 }
