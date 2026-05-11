@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
+  ForbiddenException,
 } from '@nestjs/common';
 import { ClientService } from './client.service';
 import { CreateClientDto } from './dto/create-client.dto';
@@ -73,13 +75,24 @@ export class ClientController {
   async update(
     @Param('id') id: string,
     @Body() updateClientDto: UpdateClientDto,
+    @Request() req,
   ) {
+    const requester = req.user;
+    // Cliente só pode editar a si mesmo; gerente/funcionário pode editar qualquer um
+    if (requester.role === 'CLIENT' && requester.id !== id) {
+      throw new ForbiddenException('Você só pode editar seus próprios dados.');
+    }
     return this.clientService.update(id, updateClientDto);
   }
 
   @UseGuards(JwtAuthGuard)
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  async remove(@Param('id') id: string, @Request() req) {
+    const requester = req.user;
+    // Cliente só pode deletar a si mesmo; gerente/funcionário pode deletar qualquer um
+    if (requester.role === 'CLIENT' && requester.id !== id) {
+      throw new ForbiddenException('Você só pode excluir sua própria conta.');
+    }
     return this.clientService.remove(id);
   }
 }

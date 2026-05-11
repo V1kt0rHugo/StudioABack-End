@@ -256,8 +256,6 @@ export class EmployeeService {
   }
 
   async payCommissions(dto: PayCommissionsDto) {
-    // A Autorização agora é feita pelo RolesGuard na rota, não precisamos checar o requesterId manualmente
-
     // 2. Continua o fluxo normal
     const whereClause: any = {
       isCommissionPaid: false,
@@ -344,5 +342,90 @@ export class EmployeeService {
         remainingBalance: currentBalance.balance - totalToPay,
       };
     });
+  }
+
+  async getAvailability(id: string, dateString: string, totalDuration: number = 30) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+      include: { Schedules: true },
+    });
+
+    if (!employee) throw new BadRequestException('Funcionário não encontrado');
+
+    const [year, month, day] = dateString.split('-').map(Number);
+    const date = new Date(year, month - 1, day);
+    const dayOfWeek = date.getDay();
+
+    const daySchedules = employee.Schedules.filter(
+      (s) => s.dayOfWeek === dayOfWeek,
+    );
+    if (daySchedules.length === 0) return [];
+
+    const startOfDay = new Date(date);
+    startOfDay.setHours(0, 0, 0, 0);
+    const endOfDay = new Date(date);
+    endOfDay.setHours(23, 59, 59, 999);
+
+    const appointments = await this.prisma.customerService.findMany({
+      where: {
+        PerformedServices: { some: { idEmployee: id } },
+        Status: { not: 'CANCELED' },
+        Date: { gte: startOfDay, lte: endOfDay },
+      },
+      select: { Date: true, EndTime: true },
+    });
+
+    const slots: { time: string; period: string; status: string; disabled: boolean }[] = [];
+    const durationMs = totalDuration * 60000;
+
+    daySchedules.forEach((schedule) => {
+      let current = this.parseTime(schedule.startTime, date);
+      const end = this.parseTime(schedule.endTime, date);
+
+      // Gera slots de 30 em 30 minutos, mas verifica se a duração TOTAL cabe
+      while (current < end) {
+        const slotEnd = new Date(current.getTime() + durationMs);
+
+        // Slot fora do horário de trabalho: marcar como indisponível e parar
+        if (slotEnd > end) {
+          slots.push({
+            time: current.toTimeString().substring(0, 5),
+            period: current.getHours() < 12 ? 'AM' : 'PM',
+            status: 'Lotado',
+            disabled: true,
+          });
+          current = new Date(current.getTime() + 30 * 60000);
+          continue;
+        }
+
+        // Verifica se ALGUM agendamento sobrepoe o bloco completo [current, slotEnd]
+        const isBusy = appointments.some((app) => {
+          return (
+            (current >= app.Date && current < app.EndTime) ||
+            (slotEnd > app.Date && slotEnd <= app.EndTime) ||
+            (app.Date >= current && app.Date < slotEnd)
+          );
+        });
+
+        slots.push({
+          time: current.toTimeString().substring(0, 5),
+          period: current.getHours() < 12 ? 'AM' : 'PM',
+          status: isBusy ? 'Lotado' : 'Disponível',
+          disabled: isBusy,
+        });
+
+        // Avança sempre de 30 em 30 minutos para exibir todos os slots
+        current = new Date(current.getTime() + 30 * 60000);
+      }
+    });
+
+    return slots;
+  }
+
+  private parseTime(timeStr: string, baseDate: Date): Date {
+    const [hours, minutes] = timeStr.split(':').map(Number);
+    const d = new Date(baseDate);
+    d.setHours(hours, minutes, 0, 0);
+    return d;
   }
 }

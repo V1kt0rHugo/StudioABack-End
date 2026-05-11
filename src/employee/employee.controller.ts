@@ -82,4 +82,17 @@ export class EmployeeController {
       paymentStatus,
     );
   }
+
+  @Get(':id/availability')
+  getAvailability(
+    @Param('id') id: string,
+    @Query('date') date: string,
+    @Query('totalDuration') totalDuration?: string,
+  ) {
+    return this.employeeService.getAvailability(
+      id,
+      date,
+      totalDuration ? parseInt(totalDuration, 10) : 30,
+    );
+  }
 }
