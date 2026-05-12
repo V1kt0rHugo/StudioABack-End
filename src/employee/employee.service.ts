@@ -24,6 +24,7 @@ export class EmployeeService {
         CPF: createEmployeeDto.CPF,
         phone: createEmployeeDto.phone,
         commissionPercentage: createEmployeeDto.commissionPercentage,
+        role: createEmployeeDto.role,
         Skills: {
           connect: createEmployeeDto.skills?.map((id) => ({ id })) || [],
         },
@@ -38,6 +39,7 @@ export class EmployeeService {
         CPF: true,
         phone: true,
         commissionPercentage: true,
+        role: true,
         Skills: true,
         Schedules: true,
       },

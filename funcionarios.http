@@ -1,6 +1,6 @@
 ### Create Employee
 @baseUrl = http://localhost:3000
-@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6InZpY3Rvcmh1Z29Ac3R1ZGlvYS5jb20iLCJzdWIiOiI4ZWMzYWY5Ny01M2RkLTRhNzMtYjVhZC05NWFjNjAwMjRjOTQiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3ODUyNTM2NywiZXhwIjoxNzc4NTU0MTY3fQ.HsSJId7PDlcF3_tLtvypRNWMI_iLBxuda9ugUsiz7Oo
+@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZHJlYWNhenVsYUBnbWFpbC5jb20iLCJzdWIiOiI2MjcxZmQzOS1kNjUwLTRjOTYtYWRiZC00YTZlY2IwZTE0OWYiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3ODYxMjUxMSwiZXhwIjoxNzc4NjQxMzExfQ.MlACrbcLiRyuxNhjxSRJxly6T2UsixKFwkU5K35gb6o
 @EscovaId = ac3c0360-a3fc-4a73-a458-6782883b7234
 @TinturaId = dc9e4cfc-1d11-45a1-ae1f-b78af5ab31eb
 @CorteId = 2a467d8e-5996-4be4-a405-2209f5f0a145
@@ -8,6 +8,7 @@
 @MechasId = 25df9b74-e94e-45eb-a68b-02d98f4c4ceb
 @GlossId = 06a83b68-0da5-4e9a-9d5e-1a6809ca9cd4
 @MaquiagemId = 8f565e90-02a9-437d-8264-d5265a2c8c2e
+@managerId = 8ec3af97-53dd-4a73-b5ad-95ac60024c94
 
 ### Create Employee
 POST {{baseUrl}}/employee
@@ -88,3 +89,17 @@ Authorization: Bearer {{ManagerToken}}
 
     ]
 }
+
+
+### Manager Login
+POST {{baseUrl}}/auth/login
+Content-Type: application/json
+
+{
+    "email": "andreacazula@gmail.com",
+    "password": "Password123!"
+}
+
+### Delete Employee
+DELETE {{baseUrl}}/employee/{{managerId}}
+Authorization: Bearer {{ManagerToken}}
