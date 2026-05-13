@@ -6,7 +6,7 @@ import {
   IsOptional,
   IsUUID,
 } from 'class-validator';
-import { TransactionType } from '@prisma/client';
+import { TransactionType, PaymentMethod } from '@prisma/client';
 
 export class CreateCashFlowDto {
   @IsEnum(TransactionType)
@@ -20,6 +20,10 @@ export class CreateCashFlowDto {
   @IsNumber()
   @IsNotEmpty()
   amount: number;
+
+  @IsEnum(PaymentMethod)
+  @IsOptional()
+  paymentMethod?: PaymentMethod;
 
   @IsUUID()
   @IsOptional()

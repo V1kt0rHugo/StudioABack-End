@@ -25,7 +25,6 @@ enum Role {
   PROFESSIONAL
 }
 
-
 model Client {
   id               String            @id @default(uuid())
   name             String
@@ -41,25 +40,25 @@ model Client {
 }
 
 model Employee {
-  id                   String              @id @default(uuid())
+  id                   String                @id @default(uuid())
   name                 String
-  email                String              @unique
+  email                String                @unique
   password             String
-  CPF                  String              @unique
+  CPF                  String                @unique
   phone                String
   commissionPercentage Float
-  role                 Role                @default(PROFESSIONAL)
+  role                 Role                  @default(PROFESSIONAL)
   PerformedServices    PerformedServices[]
-  Skills               Services[]          @relation("EmployeeSkills")
+  Skills               Services[]            @relation("EmployeeSkills")
   Schedules            EmployeeSchedule[]
   CashTransactions     CashFlowTransaction[]
 }
 
 model CustomerService {
-  id                String              @id @default(uuid())
+  id                String               @id @default(uuid())
   idClient          String
-  Client            Client              @relation(fields: [idClient], references: [id])
-  Status            ServiceStatus       @default(SCHEDULED)
+  Client            Client               @relation(fields: [idClient], references: [id])
+  Status            ServiceStatus        @default(SCHEDULED)
   Date              DateTime
   EndTime           DateTime
   TotalValue        Float
@@ -78,13 +77,13 @@ model Products {
 }
 
 model Services {
-  id                String              @id @default(uuid())
-  name              String
-  price             Float
-  estimatedDuration Int                 @default(30)
-  returnDaysReminder Int?               @default(0)
-  PerformedServices PerformedServices[]
-  SkilledEmployees  Employee[]          @relation("EmployeeSkills")
+  id                 String              @id @default(uuid())
+  name               String
+  price              Float
+  estimatedDuration  Int                 @default(30)
+  returnDaysReminder Int?                @default(0)
+  PerformedServices  PerformedServices[]
+  SkilledEmployees   Employee[]          @relation("EmployeeSkills")
 }
 
 model PerformedServices {
@@ -115,9 +114,9 @@ model EmployeeSchedule {
   id         String   @id @default(uuid())
   employeeId String
   Employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
-  dayOfWeek  Int      
-  startTime  String   
-  endTime    String   
+  dayOfWeek  Int
+  startTime  String
+  endTime    String
 }
 
 enum TransactionType {
@@ -125,11 +124,20 @@ enum TransactionType {
   EXPENSE
 }
 
+enum PaymentMethod {
+  CASH
+  CREDIT_CARD
+  DEBIT_CARD
+  PIX
+  TRANSFER
+}
+
 model CashFlowTransaction {
   id                String           @id @default(uuid())
   type              TransactionType
   description       String
   amount            Float
+  paymentMethod     PaymentMethod?
   date              DateTime         @default(now())
   idCustomerService String?          @unique
   CustomerService   CustomerService? @relation(fields: [idCustomerService], references: [id])
