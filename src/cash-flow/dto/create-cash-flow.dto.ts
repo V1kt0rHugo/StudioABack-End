@@ -5,8 +5,14 @@ import {
   IsNotEmpty,
   IsOptional,
   IsUUID,
+  IsDateString,
 } from 'class-validator';
-import { TransactionType, PaymentMethod } from '@prisma/client';
+import {
+  TransactionType,
+  PaymentMethod,
+  TransactionCategory,
+  TransactionStatus,
+} from '@prisma/client';
 
 export class CreateCashFlowDto {
   @IsEnum(TransactionType)
@@ -24,6 +30,22 @@ export class CreateCashFlowDto {
   @IsEnum(PaymentMethod)
   @IsOptional()
   paymentMethod?: PaymentMethod;
+
+  @IsEnum(TransactionCategory)
+  @IsOptional()
+  category?: TransactionCategory;
+
+  @IsEnum(TransactionStatus)
+  @IsOptional()
+  status?: TransactionStatus;
+
+  @IsDateString()
+  @IsOptional()
+  dueDate?: string;
+
+  @IsDateString()
+  @IsOptional()
+  paymentDate?: string;
 
   @IsUUID()
   @IsOptional()

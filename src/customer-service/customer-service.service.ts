@@ -271,6 +271,8 @@ export class CustomerServiceService {
         await tx.cashFlowTransaction.create({
           data: {
             type: 'INCOME',
+            category: 'SERVICO_PRESTADO',
+            status: 'PAID',
             description: `Faturamento - Atendimento #${id.split('-')[0].toUpperCase()}`,
             amount: existing.TotalValue,
             idCustomerService: id,

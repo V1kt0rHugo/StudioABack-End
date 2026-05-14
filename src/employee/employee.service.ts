@@ -52,13 +52,13 @@ export class EmployeeService {
     const skip = (page - 1) * limit;
 
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.employee.count(),
+      this.prisma.employee.count({ where: { email: { not: { endsWith: '@anonimo.com' } } } }),
       this.prisma.employee.findMany({
+        where: { email: { not: { endsWith: '@anonimo.com' } } },
         select: {
           id: true,
           name: true,
           email: true,
-          CPF: true,
           phone: true,
           commissionPercentage: true,
           role: true,
@@ -155,13 +155,21 @@ export class EmployeeService {
       throw new Error('Funcionário não encontrado');
     }
 
-    await this.prisma.employee.delete({
-      where: {
-        id,
+    // Soft delete (LGPD - Anonymization)
+    await this.prisma.employee.update({
+      where: { id },
+      data: {
+        name: 'Profissional Removido',
+        email: `apagado_${id}@anonimo.com`,
+        password: '',
+        CPF: `***.***.***-${id.substring(0, 2)}`,
+        phone: '00000000000',
+        Schedules: { deleteMany: {} },
+        Skills: { set: [] },
       },
     });
 
-    return { message: 'Funcionário deletado com sucesso' };
+    return { message: 'Funcionário removido com sucesso (Anonimizado)' };
   }
 
   async getCommissions(
@@ -329,6 +337,8 @@ export class EmployeeService {
         await tx.cashFlowTransaction.create({
           data: {
             type: 'EXPENSE',
+            category: 'PAGAMENTO_COMISSAO',
+            status: 'PAID',
             description: `Pagamento de Comissões - ${entry.employeeName}`,
             amount: entry.totalAmount,
             date: now,

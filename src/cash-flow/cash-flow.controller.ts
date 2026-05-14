@@ -45,6 +45,14 @@ export class CashFlowController {
     return this.cashFlowService.getDashboardStats(startDate, endDate);
   }
 
+  @Get('forecast')
+  getForecast(
+    @Query('startDate') startDate?: string,
+    @Query('endDate') endDate?: string,
+  ) {
+    return this.cashFlowService.getForecast(startDate, endDate);
+  }
+
   @Get()
   findAll(@Query() filterDto: CashFlowFilterDto) {
     return this.cashFlowService.findAll(filterDto);
@@ -61,6 +69,11 @@ export class CashFlowController {
     @Body() updateCashFlowDto: UpdateCashFlowDto,
   ) {
     return this.cashFlowService.update(id, updateCashFlowDto);
+  }
+
+  @Patch(':id/pay')
+  pay(@Param('id') id: string) {
+    return this.cashFlowService.pay(id);
   }
 
   @Delete(':id')

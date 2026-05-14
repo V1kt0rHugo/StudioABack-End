@@ -17,6 +17,9 @@ import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientFilterDto } from './dto/client-filter.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/roles.decorator';
+import { Role } from '@prisma/client';
 
 @Controller('client')
 export class ClientController {
@@ -40,19 +43,22 @@ export class ClientController {
     return this.clientService.resendVerificationCode(body.email);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER, Role.PROFESSIONAL)
   @Get()
   findAll(@Query() filterDto: ClientFilterDto) {
     return this.clientService.findAll(filterDto);
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER, Role.PROFESSIONAL)
   @Get('reminders')
   getReminders() {
     return this.clientService.getReminders();
   }
 
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.MANAGER, Role.PROFESSIONAL)
   @Get('deleted')
   findAllDeleted() {
     return this.clientService.findAllDeleted();
@@ -60,13 +66,21 @@ export class ClientController {
 
   @UseGuards(JwtAuthGuard)
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(@Param('id') id: string, @Request() req) {
+    const requester = req.user;
+    if (requester.role === 'CLIENT' && requester.id !== id) {
+      throw new ForbiddenException('Você só pode visualizar seus próprios dados.');
+    }
     return this.clientService.findOne(id);
   }
 
   @UseGuards(JwtAuthGuard)
   @Get(':id/history')
-  getHistory(@Param('id') id: string) {
+  getHistory(@Param('id') id: string, @Request() req) {
+    const requester = req.user;
+    if (requester.role === 'CLIENT' && requester.id !== id) {
+      throw new ForbiddenException('Você só pode visualizar seu próprio histórico.');
+    }
     return this.clientService.getClientHistory(id);
   }
 

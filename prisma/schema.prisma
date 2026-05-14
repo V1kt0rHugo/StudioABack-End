@@ -124,6 +124,24 @@ enum TransactionType {
   EXPENSE
 }
 
+enum TransactionCategory {
+  SERVICO_PRESTADO
+  VENDA_PRODUTO
+  PAGAMENTO_COMISSAO
+  COMPRA_INSUMOS
+  ALUGUEL
+  AGUA_LUZ
+  MARKETING
+  SALARIO
+  OUTROS
+}
+
+enum TransactionStatus {
+  PAID
+  PENDING
+  CANCELED
+}
+
 enum PaymentMethod {
   CASH
   CREDIT_CARD
@@ -133,14 +151,18 @@ enum PaymentMethod {
 }
 
 model CashFlowTransaction {
-  id                String           @id @default(uuid())
+  id                String               @id @default(uuid())
   type              TransactionType
   description       String
   amount            Float
   paymentMethod     PaymentMethod?
-  date              DateTime         @default(now())
-  idCustomerService String?          @unique
-  CustomerService   CustomerService? @relation(fields: [idCustomerService], references: [id])
+  category          TransactionCategory?
+  status            TransactionStatus    @default(PAID)
+  dueDate           DateTime?
+  paymentDate       DateTime?
+  date              DateTime             @default(now())
+  idCustomerService String?              @unique
+  CustomerService   CustomerService?     @relation(fields: [idCustomerService], references: [id])
   idEmployee        String?
-  Employee          Employee?        @relation(fields: [idEmployee], references: [id])
+  Employee          Employee?            @relation(fields: [idEmployee], references: [id])
 }
