@@ -38,6 +38,13 @@ export class ProductsService {
     };
   }
 
+  async findLowStock() {
+    const products = await this.prisma.products.findMany({
+      orderBy: { stock: 'asc' },
+    });
+    return products.filter((p) => p.minStock !== null && p.stock <= p.minStock);
+  }
+
   async findOne(id: string) {
     const product = await this.prisma.products.findUnique({ where: { id } });
     if (!product) throw new NotFoundException('Produto não encontrado');

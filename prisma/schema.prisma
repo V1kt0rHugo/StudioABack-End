@@ -73,6 +73,10 @@ model Products {
   price         Float
   brand         String
   stock         Float
+  minStock      Float?          @default(0)
+  totalVolume   Float?
+  volumePerUnit Float?
+  unit          String?
   ConsumedItems ConsumedItems[]
 }
 

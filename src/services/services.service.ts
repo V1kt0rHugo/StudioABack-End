@@ -12,6 +12,7 @@ export class ServicesService {
       data: {
         name: createServiceDto.name,
         price: createServiceDto.price,
+        estimatedDuration: createServiceDto.estimatedDuration,
       },
     });
     return service;

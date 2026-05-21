@@ -36,6 +36,11 @@ export class ProductsController {
     return this.productsService.findAll(paginationDto);
   }
 
+  @Get('low-stock')
+  findLowStock() {
+    return this.productsService.findLowStock();
+  }
+
   @Get(':id')
   findOne(@Param('id') id: string) {
     return this.productsService.findOne(id);

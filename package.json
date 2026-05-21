@@ -89,5 +89,8 @@
     "moduleNameMapper": {
       "^src/(.*)$": "<rootDir>/$1"
     }
+  },
+  "prisma": {
+    "seed": "node seed.js"
   }
 }

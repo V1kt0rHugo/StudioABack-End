@@ -10,6 +10,7 @@ import { ProductsModule } from './products/products.module';
 import { CashFlowModule } from './cash-flow/cash-flow.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -22,6 +23,7 @@ import { MailModule } from './mail/mail.module';
     CashFlowModule,
     AuthModule,
     MailModule,
+    DashboardModule,
   ],
   providers: [EmployeeService, PrismaService],
 })

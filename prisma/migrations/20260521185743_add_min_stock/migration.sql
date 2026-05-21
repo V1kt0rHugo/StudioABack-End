@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE "Products" ADD COLUMN     "minStock" DOUBLE PRECISION DEFAULT 0;
