@@ -144,6 +144,30 @@ export class EmployeeService {
     return { message: 'Funcionário atualizado com sucesso' };
   }
 
+  async saveWeekExceptions(id: string, dates: string[], schedules: any[]) {
+    // 1. Delete all existing exceptions for these dates
+    await this.prisma.employeeSchedule.deleteMany({
+      where: {
+        employeeId: id,
+        date: { in: dates }
+      }
+    });
+
+    // 2. Insert the new ones
+    if (schedules && schedules.length > 0) {
+      // Ensure all schedules have employeeId set correctly since we use createMany
+      const schedulesToInsert = schedules.map(s => ({
+        ...s,
+        employeeId: id
+      }));
+      await this.prisma.employeeSchedule.createMany({
+        data: schedulesToInsert
+      });
+    }
+
+    return { message: 'Exceções de horário salvas com sucesso' };
+  }
+
   async remove(id: string) {
     const employee = await this.prisma.employee.findUnique({
       where: {

@@ -58,6 +58,15 @@ export class EmployeeController {
     return this.employeeService.update(id, updateEmployeeDto);
   }
 
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/schedules/exceptions')
+  saveExceptions(
+    @Param('id') id: string,
+    @Body() body: { dates: string[], schedules: any[] }
+  ) {
+    return this.employeeService.saveWeekExceptions(id, body.dates, body.schedules);
+  }
+
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.MANAGER)
   @Delete(':id')

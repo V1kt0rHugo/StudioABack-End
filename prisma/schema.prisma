@@ -31,7 +31,7 @@ model Client {
   email            String            @unique
   password         String
   phone            String?
-  birthDate        DateTime?
+  birthDate        DateTime
   notes            String?
   isEmailVerified  Boolean           @default(false)
   verificationCode String?
@@ -119,6 +119,7 @@ model EmployeeSchedule {
   employeeId String
   Employee   Employee @relation(fields: [employeeId], references: [id], onDelete: Cascade)
   dayOfWeek  Int
+  date       String?
   startTime  String
   endTime    String
 }

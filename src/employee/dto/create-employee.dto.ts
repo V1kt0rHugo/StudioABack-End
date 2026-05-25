@@ -17,6 +17,10 @@ export class ScheduleDto {
   @IsNumber()
   dayOfWeek: number;
 
+  @IsOptional()
+  @IsString()
+  date?: string;
+
   @IsString()
   startTime: string;
 

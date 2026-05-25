@@ -1,6 +1,6 @@
 ### Create Employee
 @baseUrl = http://localhost:3000
-@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZHJlYWNhenVsYUBnbWFpbC5jb20iLCJzdWIiOiI0ZjM3OWQzYi0yNzgzLTRjMDAtYTVlZC0zMjcyYWUxZTgxMWYiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3OTIxMTI5NSwiZXhwIjoxNzc5MjQwMDk1fQ.MHyO0OE0i4r1K7N_vvvFJTIS4GvRjwHGsXs76kQChks
+@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZHJlYWNhenVsYUBnbWFpbC5jb20iLCJzdWIiOiI0ZjM3OWQzYi0yNzgzLTRjMDAtYTVlZC0zMjcyYWUxZTgxMWYiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3OTczNzAxNiwiZXhwIjoxNzc5NzY1ODE2fQ.TCh0TJ_qBkxs47Ee3KiZFBfnltHeG8wF7JBg8rZZSB8
 @EscovaId = 81a61218-a96b-4a6c-8002-73c402134d4f
 @TinturaId = f3134f34-9d91-4f90-b941-202fbe7eaca1
 @CorteId = 15e87e82-d80a-4792-92eb-98552438d38a
@@ -45,6 +45,10 @@ Authorization: Bearer {{ManagerToken}}
 
 ### GET All Employees
 GET {{baseUrl}}/employee
+Authorization: Bearer {{ManagerToken}}
+
+### GET All Clients
+GET {{baseUrl}}/client
 Authorization: Bearer {{ManagerToken}}
 
 ### Create Service
@@ -106,3 +110,28 @@ Content-Type: application/json
 ### Delete Employee
 DELETE {{baseUrl}}/employee/{{managerId}}
 Authorization: Bearer {{ManagerToken}}
+
+
+### Create Client
+POST {{baseUrl}}/client
+Content-Type: application/json
+Authorization: Bearer {{ManagerToken}}
+
+{
+    "name": "Cliente Teste",
+    "password": "Password123!",
+    "email": "cliente@gmail.com",
+    "phone": "(11) 91234-5678"
+}
+
+### Update Client
+PATCH {{baseUrl}}/client/c91b2ded-eee1-488f-96f7-bea87e81b1c2
+Content-Type: application/json
+Authorization: Bearer {{ManagerToken}}
+
+{
+    "name": "Cliente Teste",
+    "password": "Password123!",
+    "phone": "(11) 91234-5678",
+    "birthDate": "1990-05-25T00:00:00Z"
+}
