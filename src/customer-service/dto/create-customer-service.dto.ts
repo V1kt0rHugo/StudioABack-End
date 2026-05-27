@@ -35,4 +35,8 @@ export class CreateCustomerServiceDto {
   @ValidateNested({ each: true })
   @Type(() => ServiceItemDto)
   services: ServiceItemDto[];
+
+  @IsOptional()
+  @IsString()
+  clientFeedback?: string;
 }

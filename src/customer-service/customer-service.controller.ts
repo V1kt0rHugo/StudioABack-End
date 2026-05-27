@@ -8,6 +8,8 @@ import {
   Delete,
   UseGuards,
   Query,
+  Request,
+  BadRequestException,
 } from '@nestjs/common';
 import { CustomerServiceService } from './customer-service.service';
 import { CreateCustomerServiceDto } from './dto/create-customer-service.dto';
@@ -30,6 +32,15 @@ export class CustomerServiceController {
   @Get()
   findAll(@Query() filterDto: CustomerServiceFilterDto) {
     return this.customerServiceService.findAll(filterDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('meus-agendamentos')
+  findMyAppointments(@Request() req) {
+    if (req.user.role === 'CLIENT') {
+      throw new BadRequestException('Acesso permitido apenas para funcionários');
+    }
+    return this.customerServiceService.findMyAppointments(req.user.id);
   }
 
   @UseGuards(JwtAuthGuard)

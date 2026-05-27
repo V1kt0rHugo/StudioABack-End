@@ -165,6 +165,7 @@ export class CustomerServiceService {
         PerformedServices: {
           create: performedServicesData,
         },
+        clientFeedback: createCustomerServiceDto.clientFeedback,
       },
     });
     return customerService;
@@ -207,6 +208,38 @@ export class CustomerServiceService {
         totalPages: Math.ceil(total / limit),
       },
     };
+  }
+
+  async findMyAppointments(employeeId: string) {
+    return await this.prisma.customerService.findMany({
+      where: {
+        PerformedServices: {
+          some: {
+            idEmployee: employeeId,
+          },
+        },
+      },
+      include: {
+        Client: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+            phone: true,
+            birthDate: true,
+            notes: true,
+          },
+        },
+        PerformedServices: {
+          include: {
+            Service: true,
+          },
+        },
+      },
+      orderBy: {
+        Date: 'desc',
+      },
+    });
   }
 
   findOne(id: string) {

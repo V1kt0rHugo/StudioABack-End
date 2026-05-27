@@ -15,4 +15,11 @@ export class DashboardController {
     const { sub: employeeId, role } = req.user;
     return this.dashboardService.getSummary(employeeId, role, dateString);
   }
+
+  @UseGuards(JwtAuthGuard)
+  @Get('meus-agendamentos')
+  getMyAppointments(@Request() req: any) {
+    const { sub: employeeId } = req.user;
+    return this.dashboardService.findMyAppointments(employeeId);
+  }
 }

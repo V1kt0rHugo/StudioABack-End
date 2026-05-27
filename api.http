@@ -189,3 +189,15 @@ Authorization: Bearer {{ManagerToken}}
 ### Obter Transações do Fluxo de Caixa
 GET {{baseUrl}}/cash-flow
 Authorization: Bearer {{ManagerToken}}
+
+### ========================================
+### MEUS AGENDAMENTOS (PROFISSIONAL)
+### ========================================
+
+### Obter Agendamentos do Funcionário Logado (Jenifer) - Via Customer Service
+GET {{baseUrl}}/customer-service/meus-agendamentos
+Authorization: Bearer {{JeniferToken}}
+
+### Obter Agendamentos do Funcionário Logado (Jenifer) - Via Dashboard
+GET {{baseUrl}}/dashboard/meus-agendamentos
+Authorization: Bearer {{JeniferToken}}
