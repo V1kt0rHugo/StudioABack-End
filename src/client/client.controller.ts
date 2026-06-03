@@ -16,6 +16,7 @@ import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientFilterDto } from './dto/client-filter.dto';
 import { VerifyEmailDto } from './dto/verify-email.dto';
+import { UpsertAnamnesisDto } from './dto/upsert-anamnesis.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/roles.decorator';
@@ -69,7 +70,9 @@ export class ClientController {
   findOne(@Param('id') id: string, @Request() req) {
     const requester = req.user;
     if (requester.role === 'CLIENT' && requester.id !== id) {
-      throw new ForbiddenException('Você só pode visualizar seus próprios dados.');
+      throw new ForbiddenException(
+        'Você só pode visualizar seus próprios dados.',
+      );
     }
     return this.clientService.findOne(id);
   }
@@ -79,9 +82,39 @@ export class ClientController {
   getHistory(@Param('id') id: string, @Request() req) {
     const requester = req.user;
     if (requester.role === 'CLIENT' && requester.id !== id) {
-      throw new ForbiddenException('Você só pode visualizar seu próprio histórico.');
+      throw new ForbiddenException(
+        'Você só pode visualizar seu próprio histórico.',
+      );
     }
     return this.clientService.getClientHistory(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Get(':id/anamnesis')
+  getAnamnesis(@Param('id') id: string, @Request() req) {
+    const requester = req.user;
+    if (requester.role === 'CLIENT' && requester.id !== id) {
+      throw new ForbiddenException(
+        'Você só pode visualizar sua própria anamnese.',
+      );
+    }
+    return this.clientService.getAnamnesis(id);
+  }
+
+  @UseGuards(JwtAuthGuard)
+  @Post(':id/anamnesis')
+  upsertAnamnesis(
+    @Param('id') id: string,
+    @Body() upsertAnamnesisDto: UpsertAnamnesisDto,
+    @Request() req,
+  ) {
+    const requester = req.user;
+    if (requester.role === 'CLIENT' && requester.id !== id) {
+      throw new ForbiddenException(
+        'Você só pode editar sua própria anamnese.',
+      );
+    }
+    return this.clientService.upsertAnamnesis(id, upsertAnamnesisDto);
   }
 
   @UseGuards(JwtAuthGuard)

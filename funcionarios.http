@@ -1,6 +1,6 @@
 ### Create Employee
 @baseUrl = http://localhost:3000
-@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZHJlYWNhenVsYUBnbWFpbC5jb20iLCJzdWIiOiI0ZjM3OWQzYi0yNzgzLTRjMDAtYTVlZC0zMjcyYWUxZTgxMWYiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3OTkxMzc3NywiZXhwIjoxNzc5OTQyNTc3fQ.Z9Sj_nMJsmEzO0BFicf9hycICdo1hzbkzssPt-KGjK8
+@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZHJlYWNhenVsYUBnbWFpbC5jb20iLCJzdWIiOiI0ZjM3OWQzYi0yNzgzLTRjMDAtYTVlZC0zMjcyYWUxZTgxMWYiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3OTk4NzMzNCwiZXhwIjoxNzgwMDE2MTM0fQ.Rt6kjtA-grZcPo_uUZY_O1TkZ-urm1gLhM0NWKkd3dk
 @EscovaId = 81a61218-a96b-4a6c-8002-73c402134d4f
 @TinturaId = f3134f34-9d91-4f90-b941-202fbe7eaca1
 @CorteId = 15e87e82-d80a-4792-92eb-98552438d38a

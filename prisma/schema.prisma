@@ -20,6 +20,20 @@ enum ServiceStatus {
   CANCELED
 }
 
+enum OrderStatus {
+  OPEN
+  CLOSED
+  CANCELED
+}
+
+enum StockAdjustmentType {
+  LOSS
+  DAMAGE
+  EXPIRATION
+  AUDIT
+  CORRECTION
+}
+
 enum Role {
   MANAGER
   PROFESSIONAL
@@ -37,6 +51,31 @@ model Client {
   verificationCode String?
   createdAt        DateTime          @default(now())
   CustomerServices CustomerService[]
+  Anamneses        ClientAnamnesis[]
+  Packages         ClientPackage[]
+  Orders           Order[]
+}
+
+model ClientAnamnesis {
+  id              String   @id @default(uuid())
+  idClient        String
+  Client          Client   @relation(fields: [idClient], references: [id])
+  notes           String?
+  allergies       String?
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model ClientPackage {
+  id             String   @id @default(uuid())
+  idClient       String
+  Client         Client   @relation(fields: [idClient], references: [id])
+  idService      String
+  Service        Services @relation(fields: [idService], references: [id])
+  totalQuantity  Int
+  usedQuantity   Int      @default(0)
+  expirationDate DateTime?
+  createdAt      DateTime @default(now())
 }
 
 model Employee {
@@ -49,9 +88,22 @@ model Employee {
   commissionPercentage Float
   role                 Role                  @default(PROFESSIONAL)
   PerformedServices    PerformedServices[]
-  Skills               Services[]            @relation("EmployeeSkills")
+  ServiceConfigs       EmployeeServiceConfig[]
   Schedules            EmployeeSchedule[]
   CashTransactions     CashFlowTransaction[]
+}
+
+model EmployeeServiceConfig {
+  id               String   @id @default(uuid())
+  idEmployee       String
+  Employee         Employee @relation(fields: [idEmployee], references: [id])
+  idService        String
+  Service          Services @relation(fields: [idService], references: [id])
+  customPrice      Float?
+  customDuration   Int?
+  customCommission Float?
+  
+  @@unique([idEmployee, idService])
 }
 
 model CustomerService {
@@ -62,10 +114,44 @@ model CustomerService {
   Date              DateTime
   EndTime           DateTime
   TotalValue        Float
+  idOrder           String?
+  Order             Order?               @relation(fields: [idOrder], references: [id])
   ConsumedItems     ConsumedItems[]
   PerformedServices PerformedServices[]
   CashTransaction   CashFlowTransaction?
   clientFeedback    String?
+}
+
+model Order {
+  id               String               @id @default(uuid())
+  idClient         String
+  Client           Client               @relation(fields: [idClient], references: [id])
+  date             DateTime             @default(now())
+  status           OrderStatus          @default(OPEN)
+  totalValue       Float                @default(0)
+  CustomerServices CustomerService[]
+  ProductSales     ProductSale[]
+  Payments         OrderPayment[]
+  CashTransactions CashFlowTransaction[]
+}
+
+model OrderPayment {
+  id            String        @id @default(uuid())
+  idOrder       String
+  Order         Order         @relation(fields: [idOrder], references: [id])
+  amount        Float
+  paymentMethod PaymentMethod
+  date          DateTime      @default(now())
+}
+
+model ProductSale {
+  id        String   @id @default(uuid())
+  idOrder   String
+  Order     Order    @relation(fields: [idOrder], references: [id])
+  idProduct String
+  Product   Products @relation(fields: [idProduct], references: [id])
+  quantity  Int
+  price     Float
 }
 
 model Products {
@@ -79,6 +165,28 @@ model Products {
   volumePerUnit Float?
   unit          String?
   ConsumedItems ConsumedItems[]
+  Batches       ProductBatch[]
+  Adjustments   StockAdjustment[]
+  Sales         ProductSale[]
+}
+
+model ProductBatch {
+  id             String    @id @default(uuid())
+  idProduct      String
+  Product        Products  @relation(fields: [idProduct], references: [id])
+  batchNumber    String
+  expirationDate DateTime?
+  quantity       Float
+}
+
+model StockAdjustment {
+  id        String              @id @default(uuid())
+  idProduct String
+  Product   Products            @relation(fields: [idProduct], references: [id])
+  quantity  Float
+  type      StockAdjustmentType
+  reason    String?
+  date      DateTime            @default(now())
 }
 
 model Services {
@@ -88,7 +196,8 @@ model Services {
   estimatedDuration  Int                 @default(30)
   returnDaysReminder Int?                @default(0)
   PerformedServices  PerformedServices[]
-  SkilledEmployees   Employee[]          @relation("EmployeeSkills")
+  EmployeeConfigs    EmployeeServiceConfig[]
+  ClientPackages     ClientPackage[]
 }
 
 model PerformedServices {
@@ -169,6 +278,8 @@ model CashFlowTransaction {
   date              DateTime             @default(now())
   idCustomerService String?              @unique
   CustomerService   CustomerService?     @relation(fields: [idCustomerService], references: [id])
+  idOrder           String?
+  Order             Order?               @relation(fields: [idOrder], references: [id])
   idEmployee        String?
   Employee          Employee?            @relation(fields: [idEmployee], references: [id])
 }

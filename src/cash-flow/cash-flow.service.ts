@@ -16,7 +16,14 @@ export class CashFlowService {
   }
 
   async findAll(filterDto: CashFlowFilterDto) {
-    const { page = 1, limit = 50, startDate, endDate, status, category } = filterDto;
+    const {
+      page = 1,
+      limit = 50,
+      startDate,
+      endDate,
+      status,
+      category,
+    } = filterDto;
     const skip = (page - 1) * limit;
 
     const whereClause: any = {};
@@ -107,16 +114,33 @@ export class CashFlowService {
       where: whereClause,
     });
 
-    const realIncome = transactions.filter((t) => t.type === 'INCOME' && t.status === 'PAID').reduce((a, c) => a + c.amount, 0);
-    const realExpense = transactions.filter((t) => t.type === 'EXPENSE' && t.status === 'PAID').reduce((a, c) => a + c.amount, 0);
-    const pendingIncome = transactions.filter((t) => t.type === 'INCOME' && t.status === 'PENDING').reduce((a, c) => a + c.amount, 0);
-    const pendingExpense = transactions.filter((t) => t.type === 'EXPENSE' && t.status === 'PENDING').reduce((a, c) => a + c.amount, 0);
+    const realIncome = transactions
+      .filter((t) => t.type === 'INCOME' && t.status === 'PAID')
+      .reduce((a, c) => a + c.amount, 0);
+    const realExpense = transactions
+      .filter((t) => t.type === 'EXPENSE' && t.status === 'PAID')
+      .reduce((a, c) => a + c.amount, 0);
+    const pendingIncome = transactions
+      .filter((t) => t.type === 'INCOME' && t.status === 'PENDING')
+      .reduce((a, c) => a + c.amount, 0);
+    const pendingExpense = transactions
+      .filter((t) => t.type === 'EXPENSE' && t.status === 'PENDING')
+      .reduce((a, c) => a + c.amount, 0);
 
     return {
-      period: { start: startDate || 'Todo o histórico', end: endDate || 'Todo o histórico' },
-      real: { income: realIncome, expense: realExpense, balance: realIncome - realExpense },
+      period: {
+        start: startDate || 'Todo o histórico',
+        end: endDate || 'Todo o histórico',
+      },
+      real: {
+        income: realIncome,
+        expense: realExpense,
+        balance: realIncome - realExpense,
+      },
       pending: { income: pendingIncome, expense: pendingExpense },
-      projected: { balance: realIncome - realExpense + pendingIncome - pendingExpense },
+      projected: {
+        balance: realIncome - realExpense + pendingIncome - pendingExpense,
+      },
     };
   }
 
@@ -138,7 +162,10 @@ export class CashFlowService {
     if (data.dueDate) data.dueDate = new Date(data.dueDate);
     if (data.paymentDate) data.paymentDate = new Date(data.paymentDate);
 
-    return await this.prisma.cashFlowTransaction.update({ where: { id }, data });
+    return await this.prisma.cashFlowTransaction.update({
+      where: { id },
+      data,
+    });
   }
 
   // Marca uma transação PENDING como PAID, registrando a data de pagamento
@@ -148,7 +175,9 @@ export class CashFlowService {
     });
     if (!transaction) throw new NotFoundException('Transação não encontrada');
     if (transaction.status !== 'PENDING') {
-      throw new NotFoundException('Apenas transações PENDING podem ser marcadas como pagas');
+      throw new NotFoundException(
+        'Apenas transações PENDING podem ser marcadas como pagas',
+      );
     }
 
     return await this.prisma.cashFlowTransaction.update({
@@ -197,23 +226,40 @@ export class CashFlowService {
       include: { Service: true, Employee: true },
     });
 
-    const serviceStats = new Map<string, { name: string; count: number; total: number }>();
-    const employeeStats = new Map<string, { name: string; totalRevenue: number; totalCommission: number }>();
+    const serviceStats = new Map<
+      string,
+      { name: string; count: number; total: number }
+    >();
+    const employeeStats = new Map<
+      string,
+      { name: string; totalRevenue: number; totalCommission: number }
+    >();
 
     performedServices.forEach((ps) => {
-      const s = serviceStats.get(ps.idService) || { name: ps.Service.name, count: 0, total: 0 };
+      const s = serviceStats.get(ps.idService) || {
+        name: ps.Service.name,
+        count: 0,
+        total: 0,
+      };
       s.count++;
       s.total += ps.priceCharged;
       serviceStats.set(ps.idService, s);
 
-      const e = employeeStats.get(ps.idEmployee) || { name: ps.Employee.name, totalRevenue: 0, totalCommission: 0 };
+      const e = employeeStats.get(ps.idEmployee) || {
+        name: ps.Employee.name,
+        totalRevenue: 0,
+        totalCommission: 0,
+      };
       e.totalRevenue += ps.priceCharged;
       e.totalCommission += ps.commissionValue;
       employeeStats.set(ps.idEmployee, e);
     });
 
     // Breakdown por Categoria (Plano de Contas / DRE)
-    const categoryBreakdown = new Map<string, { income: number; expense: number }>();
+    const categoryBreakdown = new Map<
+      string,
+      { income: number; expense: number }
+    >();
     transactions.forEach((t) => {
       const key = t.category ?? 'OUTROS';
       const entry = categoryBreakdown.get(key) || { income: 0, expense: 0 };
@@ -223,10 +269,17 @@ export class CashFlowService {
     });
 
     // Movimentação Diária
-    const dailyStats = new Map<string, { date: string; income: number; expense: number }>();
+    const dailyStats = new Map<
+      string,
+      { date: string; income: number; expense: number }
+    >();
     transactions.forEach((t) => {
       const dateKey = t.date.toISOString().split('T')[0];
-      const entry = dailyStats.get(dateKey) || { date: dateKey, income: 0, expense: 0 };
+      const entry = dailyStats.get(dateKey) || {
+        date: dateKey,
+        income: 0,
+        expense: 0,
+      };
       if (t.type === 'INCOME') entry.income += t.amount;
       else entry.expense += t.amount;
       dailyStats.set(dateKey, entry);
@@ -238,9 +291,15 @@ export class CashFlowService {
         end: endDate || 'Todo o histórico',
       },
       overall: await this.getBalance(startDate, endDate),
-      categoryBreakdown: Array.from(categoryBreakdown.entries()).map(([category, values]) => ({ category, ...values })),
-      topServices: Array.from(serviceStats.values()).sort((a, b) => b.total - a.total).slice(0, 5),
-      topEmployees: Array.from(employeeStats.values()).sort((a, b) => b.totalRevenue - a.totalRevenue),
+      categoryBreakdown: Array.from(categoryBreakdown.entries()).map(
+        ([category, values]) => ({ category, ...values }),
+      ),
+      topServices: Array.from(serviceStats.values())
+        .sort((a, b) => b.total - a.total)
+        .slice(0, 5),
+      topEmployees: Array.from(employeeStats.values()).sort(
+        (a, b) => b.totalRevenue - a.totalRevenue,
+      ),
       dailyMovement: Array.from(dailyStats.values()),
     };
   }

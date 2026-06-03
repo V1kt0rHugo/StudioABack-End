@@ -7,6 +7,7 @@ import { Cron, CronExpression } from '@nestjs/schedule';
 import { CreateClientDto } from './dto/create-client.dto';
 import { UpdateClientDto } from './dto/update-client.dto';
 import { ClientFilterDto } from './dto/client-filter.dto';
+import { UpsertAnamnesisDto } from './dto/upsert-anamnesis.dto';
 import { PrismaService } from 'src/database/prisma.service';
 import { MailService } from 'src/mail/mail.service';
 import * as bcrypt from 'bcrypt';
@@ -29,9 +30,9 @@ export class ClientService {
       );
     }
 
-    // A verificação via DNS/SMTP (deep-email-validator) foi removida porque 
-    // costuma falhar em ambientes de desenvolvimento (Windows bloqueando porta 53) 
-    // e também é bloqueada por provedores como o Gmail. 
+    // A verificação via DNS/SMTP (deep-email-validator) foi removida porque
+    // costuma falhar em ambientes de desenvolvimento (Windows bloqueando porta 53)
+    // e também é bloqueada por provedores como o Gmail.
     // O sistema de Código OTP abaixo já é 100% suficiente para garantir que o e-mail existe.
 
     const verificationCode = Math.floor(
@@ -304,6 +305,50 @@ export class ClientService {
     };
   }
 
+  async getAnamnesis(clientId: string) {
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+    });
+    if (!client) throw new Error('Cliente não encontrado');
+
+    const anamnesis = await this.prisma.clientAnamnesis.findFirst({
+      where: { idClient: clientId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    return anamnesis || null;
+  }
+
+  async upsertAnamnesis(clientId: string, dto: UpsertAnamnesisDto) {
+    const client = await this.prisma.client.findUnique({
+      where: { id: clientId },
+    });
+    if (!client) throw new Error('Cliente não encontrado');
+
+    const existing = await this.prisma.clientAnamnesis.findFirst({
+      where: { idClient: clientId },
+      orderBy: { createdAt: 'desc' },
+    });
+
+    if (existing) {
+      return await this.prisma.clientAnamnesis.update({
+        where: { id: existing.id },
+        data: {
+          notes: dto.notes,
+          allergies: dto.allergies,
+        },
+      });
+    } else {
+      return await this.prisma.clientAnamnesis.create({
+        data: {
+          idClient: clientId,
+          notes: dto.notes,
+          allergies: dto.allergies,
+        },
+      });
+    }
+  }
+
   async getReminders() {
     const completedServices = await this.prisma.customerService.findMany({
       where: { Status: 'COMPLETED' },
@@ -368,7 +413,9 @@ export class ClientService {
     });
 
     if (result.count > 0) {
-      console.log(`[Cron] Apagados ${result.count} clientes com e-mail não verificado há mais de 24h.`);
+      console.log(
+        `[Cron] Apagados ${result.count} clientes com e-mail não verificado há mais de 24h.`,
+      );
     }
   }
 }

@@ -13,7 +13,7 @@ export class DashboardService {
       today = new Date(Number(y), Number(m) - 1, Number(d));
     }
     today.setHours(0, 0, 0, 0);
-    
+
     const tomorrow = new Date(today);
     tomorrow.setDate(tomorrow.getDate() + 1);
 
@@ -21,7 +21,15 @@ export class DashboardService {
     yesterday.setDate(yesterday.getDate() - 1);
 
     const startOfMonth = new Date(today.getFullYear(), today.getMonth(), 1);
-    const endOfMonth = new Date(today.getFullYear(), today.getMonth() + 1, 0, 23, 59, 59, 999);
+    const endOfMonth = new Date(
+      today.getFullYear(),
+      today.getMonth() + 1,
+      0,
+      23,
+      59,
+      59,
+      999,
+    );
 
     if (role === 'MANAGER') {
       // 1. Daily Appointments
@@ -29,15 +37,19 @@ export class DashboardService {
         where: { Date: { gte: today, lt: tomorrow } },
       });
 
-      const yesterdayAppointmentsCount = await this.prisma.customerService.count({
-        where: { Date: { gte: yesterday, lt: today } },
-      });
+      const yesterdayAppointmentsCount =
+        await this.prisma.customerService.count({
+          where: { Date: { gte: yesterday, lt: today } },
+        });
 
       // 2. Expected Revenue
       const todayAppointments = await this.prisma.customerService.findMany({
         where: { Date: { gte: today, lt: tomorrow } },
       });
-      const expectedRevenue = todayAppointments.reduce((sum, appt) => sum + appt.TotalValue, 0);
+      const expectedRevenue = todayAppointments.reduce(
+        (sum, appt) => sum + appt.TotalValue,
+        0,
+      );
 
       // 3. Monthly Revenue
       const monthlyIncomeTxs = await this.prisma.cashFlowTransaction.findMany({
@@ -47,7 +59,10 @@ export class DashboardService {
           status: 'PAID',
         },
       });
-      const monthlyRevenue = monthlyIncomeTxs.reduce((sum, tx) => sum + tx.amount, 0);
+      const monthlyRevenue = monthlyIncomeTxs.reduce(
+        (sum, tx) => sum + tx.amount,
+        0,
+      );
       const revenueGoal = 50000;
 
       // 4. Schedule
@@ -81,27 +96,40 @@ export class DashboardService {
         select: {
           id: true,
           _count: {
-            select: { CustomerServices: true }
-          }
-        }
+            select: { CustomerServices: true },
+          },
+        },
       });
-      const retryingClients = allClients.filter(c => c._count.CustomerServices > 1).length;
-      const retentionRate = allClients.length > 0 ? Math.round((retryingClients / allClients.length) * 100) : 0;
+      const retryingClients = allClients.filter(
+        (c) => c._count.CustomerServices > 1,
+      ).length;
+      const retentionRate =
+        allClients.length > 0
+          ? Math.round((retryingClients / allClients.length) * 100)
+          : 0;
 
       // 6. Product Upsell Rate (This month)
       const thisMonthAppointments = await this.prisma.customerService.findMany({
         where: { Date: { gte: startOfMonth, lte: endOfMonth } },
-        include: { ConsumedItems: true }
+        include: { ConsumedItems: true },
       });
-      const appsWithProducts = thisMonthAppointments.filter(a => a.ConsumedItems.length > 0).length;
-      const upsellRate = thisMonthAppointments.length > 0 ? Math.round((appsWithProducts / thisMonthAppointments.length) * 100) : 0;
+      const appsWithProducts = thisMonthAppointments.filter(
+        (a) => a.ConsumedItems.length > 0,
+      ).length;
+      const upsellRate =
+        thisMonthAppointments.length > 0
+          ? Math.round((appsWithProducts / thisMonthAppointments.length) * 100)
+          : 0;
 
       // 7. Alerts (Pending Commissions & Pending Cashflow)
       const pendingCommissions = await this.prisma.performedServices.count({
-        where: { isCommissionPaid: false, CustomerService: { Status: 'COMPLETED' } }
+        where: {
+          isCommissionPaid: false,
+          CustomerService: { Status: 'COMPLETED' },
+        },
       });
       const pendingCashflow = await this.prisma.cashFlowTransaction.count({
-        where: { status: 'PENDING' }
+        where: { status: 'PENDING' },
       });
 
       const alerts: string[] = [];
@@ -117,55 +145,61 @@ export class DashboardService {
         where: { Status: 'COMPLETED' },
         orderBy: { Date: 'desc' },
         take: 10,
-        include: { Client: true, PerformedServices: { include: { Service: true, Employee: true } } }
+        include: {
+          Client: true,
+          PerformedServices: { include: { Service: true, Employee: true } },
+        },
       });
 
       const recentClients = await this.prisma.client.findMany({
         orderBy: { createdAt: 'desc' },
-        take: 5
+        take: 5,
       });
 
       const activityFeed: any[] = [];
-      recentAppointments.forEach(appt => {
-        const artisanNames = Array.from(new Set(appt.PerformedServices.map(ps => ps.Employee.name))).join(', ');
-        const serviceNames = appt.PerformedServices.map(ps => ps.Service.name).join(' & ');
+      recentAppointments.forEach((appt) => {
+        const artisanNames = Array.from(
+          new Set(appt.PerformedServices.map((ps) => ps.Employee.name)),
+        ).join(', ');
+        const serviceNames = appt.PerformedServices.map(
+          (ps) => ps.Service.name,
+        ).join(' & ');
         activityFeed.push({
           type: 'APPOINTMENT',
           icon: 'done_all',
           text: `<strong>${artisanNames}</strong> completed <em>${serviceNames}</em> for ${appt.Client.name}.`,
-          date: appt.Date
+          date: appt.Date,
         });
       });
 
-      recentClients.forEach(client => {
+      recentClients.forEach((client) => {
         activityFeed.push({
           type: 'NEW_CLIENT',
           icon: 'person_add',
           text: `<strong>New Client</strong>: ${client.name} joined Studio A.`,
-          date: client.createdAt
+          date: client.createdAt,
         });
       });
 
       const lowStockProducts = await this.prisma.products.findMany({
-        where: { 
-          OR: [
-            { stock: { lt: 10 } },
-            { totalVolume: { lt: 1000 } }
-          ]
+        where: {
+          OR: [{ stock: { lt: 10 } }, { totalVolume: { lt: 1000 } }],
         },
       });
-      
-      const inventoryAlerts = lowStockProducts.map(product => {
+
+      const inventoryAlerts = lowStockProducts.map((product) => {
         let details = `${product.stock} units left`;
         if (product.totalVolume !== null && product.unit) {
-          const approxUnits = product.volumePerUnit ? (product.totalVolume / product.volumePerUnit).toFixed(1) : product.stock;
+          const approxUnits = product.volumePerUnit
+            ? (product.totalVolume / product.volumePerUnit).toFixed(1)
+            : product.stock;
           details = `${product.totalVolume}${product.unit} left (~${approxUnits} units)`;
         }
         return {
           id: product.id,
           name: product.name,
           brand: product.brand,
-          details
+          details,
         };
       });
 
@@ -181,7 +215,7 @@ export class DashboardService {
           revenueGoal,
           retentionRate,
           upsellRate,
-          alerts
+          alerts,
         },
         activityFeed: activityFeed.slice(0, 10),
         inventoryAlerts,
@@ -225,8 +259,11 @@ export class DashboardService {
       let totalPrice = 0;
 
       const formattedSchedule = schedule.map((appt) => {
-        const totalEstimatedDuration = appt.PerformedServices.reduce((sum, ps) => sum + ps.Service.estimatedDuration, 0);
-        
+        const totalEstimatedDuration = appt.PerformedServices.reduce(
+          (sum, ps) => sum + ps.Service.estimatedDuration,
+          0,
+        );
+
         totalDuration += totalEstimatedDuration;
         totalPrice += appt.TotalValue;
 
@@ -250,7 +287,7 @@ export class DashboardService {
           todayAppointments: schedule.length,
           totalDuration,
           expectedRevenue: totalPrice,
-          alerts: []
+          alerts: [],
         },
         activityFeed: [], // Professionals might not need full activity feed, or it can be empty
         schedule: formattedSchedule,

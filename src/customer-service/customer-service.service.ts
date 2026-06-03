@@ -6,8 +6,9 @@ import {
 import { CreateCustomerServiceDto } from './dto/create-customer-service.dto';
 import { UpdateCustomerServiceDto } from './dto/update-customer-service.dto';
 import { CustomerServiceFilterDto } from './dto/customer-service-filter.dto';
+import { CheckoutCustomerServiceDto } from './dto/checkout-customer-service.dto';
 import { PrismaService } from 'src/database/prisma.service';
-
+import { Prisma } from '@prisma/client';
 export interface CommissionResult {
   employeeId: string;
   employeeName: string;
@@ -53,7 +54,7 @@ export class CustomerServiceService {
 
     const employee = await this.prisma.employee.findUnique({
       where: { id: createCustomerServiceDto.employeeId },
-      include: { Skills: true, Schedules: true },
+      include: { Schedules: true, ServiceConfigs: true },
     });
 
     if (!employee) {
@@ -75,8 +76,8 @@ export class CustomerServiceService {
       }
 
       // Validação de Especialidade (Skill)
-      const hasSkill = employee.Skills.some(
-        (skill) => skill.id === item.serviceId,
+      const hasSkill = employee.ServiceConfigs.some(
+        (config) => config.idService === item.serviceId,
       );
       if (!hasSkill) {
         throw new BadRequestException(
@@ -84,16 +85,28 @@ export class CustomerServiceService {
         );
       }
 
-      totalEstimatedDuration += service.estimatedDuration;
-      const price = item.customPrice ?? service.price;
+      // Busca a configuração personalizada do funcionário para este serviço
+      const customConfig = employee.ServiceConfigs.find(
+        (config) => config.idService === item.serviceId,
+      );
+
+      const duration =
+        customConfig?.customDuration ?? service.estimatedDuration;
+      totalEstimatedDuration += duration;
+
+      const price =
+        item.customPrice ?? customConfig?.customPrice ?? service.price;
       calculatedTotalValue += price;
+
+      const commissionPct =
+        customConfig?.customCommission ?? employee.commissionPercentage;
 
       performedServicesData.push({
         idService: item.serviceId,
         idEmployee: employee.id,
         priceCharged: price,
-        commissionPercentage: employee.commissionPercentage,
-        commissionValue: price * (employee.commissionPercentage / 100),
+        commissionPercentage: commissionPct,
+        commissionValue: price * (commissionPct / 100),
       });
     }
 
@@ -175,7 +188,7 @@ export class CustomerServiceService {
     const { page = 1, limit = 50, startDate, endDate, status } = filterDto;
     const skip = (page - 1) * limit;
 
-    const whereClause: any = {};
+    const whereClause: Prisma.CustomerServiceWhereInput = {};
     if (status) {
       whereClause.Status = status;
     }
@@ -333,9 +346,65 @@ export class CustomerServiceService {
 
       return await tx.customerService.update({
         where: { id },
-        data: restUpdate as any,
+        data: restUpdate as Prisma.CustomerServiceUncheckedUpdateInput,
       });
     });
+  }
+
+  async checkout(id: string, checkoutDto: CheckoutCustomerServiceDto) {
+    const existing = await this.prisma.customerService.findUnique({
+      where: { id },
+      include: { PerformedServices: true },
+    });
+
+    if (!existing) throw new NotFoundException('Atendimento não encontrado');
+    if (existing.Status === 'COMPLETED') {
+      throw new BadRequestException('Atendimento já foi finalizado');
+    }
+
+    let finalTotalValue = existing.TotalValue;
+
+    // Calcula o valor final com base no desconto ou preço final
+    if (checkoutDto.finalPrice !== undefined) {
+      finalTotalValue = checkoutDto.finalPrice;
+    } else if (checkoutDto.discount !== undefined) {
+      finalTotalValue = Math.max(0, existing.TotalValue - checkoutDto.discount);
+    }
+
+    // Ratear o valor final sobre os serviços prestados para que a comissão seja justa
+    const ratio =
+      existing.TotalValue > 0 ? finalTotalValue / existing.TotalValue : 1;
+
+    return await this.prisma.$transaction(async (tx) => {
+      // Atualizar os serviços prestados com o novo preço
+      for (const service of existing.PerformedServices) {
+        const newPrice = service.priceCharged * ratio;
+        const newCommission = newPrice * (service.commissionPercentage / 100);
+
+        await tx.performedServices.update({
+          where: { id: service.id },
+          data: {
+            priceCharged: newPrice,
+            commissionValue: newCommission,
+          },
+        });
+      }
+
+      // Atualizar o valor total do atendimento e mudar para COMPLETED
+      // Isso NÃO roda a lógica do fluxo de caixa definida em `update`,
+      // então precisaremos fechar o atendimento via método update reutilizando a lógica,
+      // ou recriar a lógica de caixa aqui. A melhor forma é atualizar os valores
+      // e em seguida chamar this.update(id, { Status: 'COMPLETED' })
+
+      await tx.customerService.update({
+        where: { id },
+        data: { TotalValue: finalTotalValue },
+      });
+    });
+
+    // Chama o update padrão para gerar o fluxo de caixa
+    // e dar baixa no estoque, se aplicável.
+    return this.update(id, { Status: 'COMPLETED' });
   }
 
   remove(id: string) {

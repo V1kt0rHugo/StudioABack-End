@@ -19,9 +19,7 @@ describe('MailService', () => {
       pass: 'testpass',
     });
 
-    (nodemailer.createTransport as jest.Mock).mockReturnValue(
-      mockTransporter,
-    );
+    (nodemailer.createTransport as jest.Mock).mockReturnValue(mockTransporter);
 
     const module: TestingModule = await Test.createTestingModule({
       providers: [MailService],
@@ -35,7 +33,7 @@ describe('MailService', () => {
   describe('sendVerificationCode', () => {
     it('should send verification email successfully', async () => {
       const mockInfo = { messageId: 'test-message-id' };
-      (mockTransporter.sendMail as jest.Mock).mockResolvedValue(mockInfo);
+      mockTransporter.sendMail.mockResolvedValue(mockInfo);
       (nodemailer.getTestMessageUrl as jest.Mock).mockReturnValue(
         'https://ethereal.email/test',
       );
@@ -50,16 +48,13 @@ describe('MailService', () => {
         }),
       );
 
-      const callArgs = (mockTransporter.sendMail as jest.Mock).mock
-        .calls[0][0];
+      const callArgs = mockTransporter.sendMail.mock.calls[0][0];
       expect(callArgs.text).toContain('123456');
       expect(callArgs.html).toContain('123456');
     });
 
     it('should throw error if email sending fails', async () => {
-      (mockTransporter.sendMail as jest.Mock).mockRejectedValue(
-        new Error('SMTP Error'),
-      );
+      mockTransporter.sendMail.mockRejectedValue(new Error('SMTP Error'));
 
       await expect(
         service.sendVerificationCode('test@example.com', '123456'),
@@ -77,9 +72,8 @@ describe('MailService', () => {
         providers: [MailService],
       }).compile();
 
-      const mailServiceWithoutTransporter = module.get<MailService>(
-        MailService,
-      );
+      const mailServiceWithoutTransporter =
+        module.get<MailService>(MailService);
 
       await new Promise((resolve) => setTimeout(resolve, 100));
 
@@ -100,13 +94,12 @@ describe('MailService', () => {
 
     it('should include verification code in both text and html', async () => {
       const mockInfo = { messageId: 'test-message-id' };
-      (mockTransporter.sendMail as jest.Mock).mockResolvedValue(mockInfo);
+      mockTransporter.sendMail.mockResolvedValue(mockInfo);
 
       const code = '654321';
       await service.sendVerificationCode('test@example.com', code);
 
-      const callArgs = (mockTransporter.sendMail as jest.Mock).mock
-        .calls[0][0];
+      const callArgs = mockTransporter.sendMail.mock.calls[0][0];
       expect(callArgs.text).toContain(code);
       expect(callArgs.html).toContain(code);
     });

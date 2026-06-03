@@ -1,6 +1,7 @@
 import { Injectable, BadRequestException } from '@nestjs/common';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { UpdateServiceConfigDto } from './dto/update-service-config.dto';
 import { PayCommissionsDto } from './dto/pay-commissions.dto';
 import { PrismaService } from 'src/database/prisma.service';
 import { CashFlowService } from 'src/cash-flow/cash-flow.service';
@@ -25,8 +26,9 @@ export class EmployeeService {
         phone: createEmployeeDto.phone,
         commissionPercentage: createEmployeeDto.commissionPercentage,
         role: createEmployeeDto.role,
-        Skills: {
-          connect: createEmployeeDto.skills?.map((id) => ({ id })) || [],
+        ServiceConfigs: {
+          create:
+            createEmployeeDto.skills?.map((id) => ({ idService: id })) || [],
         },
         Schedules: {
           create: createEmployeeDto.schedules || [],
@@ -40,7 +42,7 @@ export class EmployeeService {
         phone: true,
         commissionPercentage: true,
         role: true,
-        Skills: true,
+        ServiceConfigs: true,
         Schedules: true,
       },
     });
@@ -52,7 +54,9 @@ export class EmployeeService {
     const skip = (page - 1) * limit;
 
     const [total, data] = await this.prisma.$transaction([
-      this.prisma.employee.count({ where: { email: { not: { endsWith: '@anonimo.com' } } } }),
+      this.prisma.employee.count({
+        where: { email: { not: { endsWith: '@anonimo.com' } } },
+      }),
       this.prisma.employee.findMany({
         where: { email: { not: { endsWith: '@anonimo.com' } } },
         select: {
@@ -62,7 +66,7 @@ export class EmployeeService {
           phone: true,
           commissionPercentage: true,
           role: true,
-          Skills: true,
+          ServiceConfigs: true,
           Schedules: true,
         },
         skip,
@@ -93,7 +97,7 @@ export class EmployeeService {
         CPF: true,
         phone: true,
         commissionPercentage: true,
-        Skills: true,
+        ServiceConfigs: true,
         Schedules: true,
       },
     });
@@ -124,8 +128,9 @@ export class EmployeeService {
     const dataToUpdate: any = { ...restData };
 
     if (skills) {
-      dataToUpdate.Skills = {
-        set: skills.map((id) => ({ id })),
+      dataToUpdate.ServiceConfigs = {
+        deleteMany: {},
+        create: skills.map((id) => ({ idService: id })),
       };
     }
 
@@ -144,24 +149,60 @@ export class EmployeeService {
     return { message: 'Funcionário atualizado com sucesso' };
   }
 
+  async updateServiceConfig(id: string, dto: UpdateServiceConfigDto) {
+    const employee = await this.prisma.employee.findUnique({
+      where: { id },
+    });
+    if (!employee) throw new BadRequestException('Funcionário não encontrado');
+
+    const service = await this.prisma.services.findUnique({
+      where: { id: dto.idService },
+    });
+    if (!service) throw new BadRequestException('Serviço não encontrado');
+
+    // Upsert the employee service config
+    await this.prisma.employeeServiceConfig.upsert({
+      where: {
+        idEmployee_idService: {
+          idEmployee: id,
+          idService: dto.idService,
+        },
+      },
+      update: {
+        customPrice: dto.customPrice,
+        customDuration: dto.customDuration,
+        customCommission: dto.customCommission,
+      },
+      create: {
+        idEmployee: id,
+        idService: dto.idService,
+        customPrice: dto.customPrice,
+        customDuration: dto.customDuration,
+        customCommission: dto.customCommission,
+      },
+    });
+
+    return { message: 'Configurações de serviço atualizadas com sucesso' };
+  }
+
   async saveWeekExceptions(id: string, dates: string[], schedules: any[]) {
     // 1. Delete all existing exceptions for these dates
     await this.prisma.employeeSchedule.deleteMany({
       where: {
         employeeId: id,
-        date: { in: dates }
-      }
+        date: { in: dates },
+      },
     });
 
     // 2. Insert the new ones
     if (schedules && schedules.length > 0) {
       // Ensure all schedules have employeeId set correctly since we use createMany
-      const schedulesToInsert = schedules.map(s => ({
+      const schedulesToInsert = schedules.map((s) => ({
         ...s,
-        employeeId: id
+        employeeId: id,
       }));
       await this.prisma.employeeSchedule.createMany({
-        data: schedulesToInsert
+        data: schedulesToInsert,
       });
     }
 
@@ -189,7 +230,7 @@ export class EmployeeService {
         CPF: `***.***.***-${id.substring(0, 2)}`,
         phone: '00000000000',
         Schedules: { deleteMany: {} },
-        Skills: { set: [] },
+        ServiceConfigs: { deleteMany: {} },
       },
     });
 
@@ -380,7 +421,11 @@ export class EmployeeService {
     });
   }
 
-  async getAvailability(id: string, dateString: string, totalDuration: number = 30) {
+  async getAvailability(
+    id: string,
+    dateString: string,
+    totalDuration: number = 30,
+  ) {
     const employee = await this.prisma.employee.findUnique({
       where: { id },
       include: { Schedules: true },
@@ -411,7 +456,12 @@ export class EmployeeService {
       select: { Date: true, EndTime: true },
     });
 
-    const slots: { time: string; period: string; status: string; disabled: boolean }[] = [];
+    const slots: {
+      time: string;
+      period: string;
+      status: string;
+      disabled: boolean;
+    }[] = [];
     const durationMs = totalDuration * 60000;
 
     daySchedules.forEach((schedule) => {

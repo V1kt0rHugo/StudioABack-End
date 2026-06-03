@@ -59,11 +59,11 @@ describe('ClientService', () => {
     };
 
     it('should create a client successfully', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
       (validateEmail as jest.Mock).mockResolvedValue({ valid: true });
       (bcrypt.genSalt as jest.Mock).mockResolvedValue('salt');
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
-      (mockPrisma.client.create as jest.Mock).mockResolvedValue({
+      mockPrisma.client.create.mockResolvedValue({
         id: '1',
         name: createClientDto.name,
         email: createClientDto.email,
@@ -92,7 +92,7 @@ describe('ClientService', () => {
     });
 
     it('should throw ConflictException if email already exists', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         email: createClientDto.email,
       });
@@ -106,7 +106,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException for disposable email', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
       (validateEmail as jest.Mock).mockResolvedValue({
         valid: false,
         validators: {
@@ -125,7 +125,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException for invalid MX records', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
       (validateEmail as jest.Mock).mockResolvedValue({
         valid: false,
         validators: {
@@ -144,7 +144,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException for invalid SMTP', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
       (validateEmail as jest.Mock).mockResolvedValue({
         valid: false,
         validators: {
@@ -161,11 +161,11 @@ describe('ClientService', () => {
 
     it('should create client without birthDate if not provided', async () => {
       const dtoWithoutBirthDate = { ...createClientDto, birthDate: undefined };
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
       (validateEmail as jest.Mock).mockResolvedValue({ valid: true });
       (bcrypt.genSalt as jest.Mock).mockResolvedValue('salt');
       (bcrypt.hash as jest.Mock).mockResolvedValue('hashedPassword');
-      (mockPrisma.client.create as jest.Mock).mockResolvedValue({
+      mockPrisma.client.create.mockResolvedValue({
         id: '1',
         name: createClientDto.name,
         email: createClientDto.email,
@@ -188,13 +188,13 @@ describe('ClientService', () => {
       const email = 'test@example.com';
       const code = '123456';
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         email,
         isEmailVerified: false,
         verificationCode: code,
       });
-      (mockPrisma.client.update as jest.Mock).mockResolvedValue({});
+      mockPrisma.client.update.mockResolvedValue({});
 
       const result = await service.verifyEmail(email, code);
 
@@ -209,7 +209,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException if email not found', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       await expect(
         service.verifyEmail('notfound@example.com', '123456'),
@@ -220,7 +220,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException if email already verified', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         email: 'test@example.com',
         isEmailVerified: true,
@@ -235,7 +235,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException if code is invalid', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         email: 'test@example.com',
         isEmailVerified: false,
@@ -255,18 +255,16 @@ describe('ClientService', () => {
     it('should resend verification code successfully', async () => {
       const email = 'test@example.com';
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         email,
         isEmailVerified: false,
       });
-      (mockPrisma.client.update as jest.Mock).mockResolvedValue({});
+      mockPrisma.client.update.mockResolvedValue({});
 
       const result = await service.resendVerificationCode(email);
 
-      expect(result.message).toContain(
-        'Novo código de verificação enviado',
-      );
+      expect(result.message).toContain('Novo código de verificação enviado');
       expect(mockPrisma.client.update).toHaveBeenCalledWith(
         expect.objectContaining({
           data: {
@@ -281,7 +279,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException if email not found', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       await expect(
         service.resendVerificationCode('notfound@example.com'),
@@ -289,7 +287,7 @@ describe('ClientService', () => {
     });
 
     it('should throw BadRequestException if email already verified', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         email: 'test@example.com',
         isEmailVerified: true,
@@ -305,7 +303,7 @@ describe('ClientService', () => {
     it('should return paginated clients without anonymous emails', async () => {
       const filterDto = { page: 1, limit: 10 };
 
-      (mockPrisma.$transaction as jest.Mock).mockResolvedValue([
+      mockPrisma.$transaction.mockResolvedValue([
         5,
         [{ id: '1', name: 'Client 1', email: 'client1@example.com' }],
       ]);
@@ -323,7 +321,7 @@ describe('ClientService', () => {
     it('should return filtered clients when search is provided', async () => {
       const filterDto = { page: 1, limit: 10, search: 'John' };
 
-      (mockPrisma.$transaction as jest.Mock).mockResolvedValue([
+      mockPrisma.$transaction.mockResolvedValue([
         1,
         [{ id: '1', name: 'John Doe', email: 'john@example.com' }],
       ]);
@@ -337,10 +335,7 @@ describe('ClientService', () => {
     it('should handle pagination correctly', async () => {
       const filterDto = { page: 2, limit: 5 };
 
-      (mockPrisma.$transaction as jest.Mock).mockResolvedValue([
-        12,
-        [],
-      ]);
+      mockPrisma.$transaction.mockResolvedValue([12, []]);
 
       const result = await service.findAll(filterDto);
 
@@ -355,9 +350,7 @@ describe('ClientService', () => {
         { id: '1', name: 'Usuário Deletado', email: 'apagado_1@anonimo.com' },
       ];
 
-      (mockPrisma.client.findMany as jest.Mock).mockResolvedValue(
-        deletedClients,
-      );
+      mockPrisma.client.findMany.mockResolvedValue(deletedClients);
 
       const result = await service.findAllDeleted();
 
@@ -383,7 +376,7 @@ describe('ClientService', () => {
         notes: 'Notes',
       };
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(client);
+      mockPrisma.client.findUnique.mockResolvedValue(client);
 
       const result = await service.findOne('1');
 
@@ -395,7 +388,7 @@ describe('ClientService', () => {
     });
 
     it('should return null if client not found', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       const result = await service.findOne('nonexistent');
 
@@ -407,11 +400,11 @@ describe('ClientService', () => {
     it('should update client successfully', async () => {
       const updateDto = { name: 'Updated Name' };
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         name: 'Old Name',
       });
-      (mockPrisma.client.update as jest.Mock).mockResolvedValue({});
+      mockPrisma.client.update.mockResolvedValue({});
 
       const result = await service.update('1', updateDto);
 
@@ -427,12 +420,12 @@ describe('ClientService', () => {
     it('should hash password when updating', async () => {
       const updateDto = { password: 'NewPassword@123!' };
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
       });
       (bcrypt.genSalt as jest.Mock).mockResolvedValue('salt');
       (bcrypt.hash as jest.Mock).mockResolvedValue('newHashedPassword');
-      (mockPrisma.client.update as jest.Mock).mockResolvedValue({});
+      mockPrisma.client.update.mockResolvedValue({});
 
       await service.update('1', updateDto);
 
@@ -449,10 +442,10 @@ describe('ClientService', () => {
     it('should convert birthDate to Date object when updating', async () => {
       const updateDto = { birthDate: '1995-05-15' };
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
       });
-      (mockPrisma.client.update as jest.Mock).mockResolvedValue({});
+      mockPrisma.client.update.mockResolvedValue({});
 
       await service.update('1', updateDto);
 
@@ -466,7 +459,7 @@ describe('ClientService', () => {
     });
 
     it('should throw Error if client not found', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       await expect(
         service.update('nonexistent', { name: 'Test' }),
@@ -478,11 +471,11 @@ describe('ClientService', () => {
     it('should anonymize client data (soft delete)', async () => {
       const clientId = '1';
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: clientId,
         name: 'Test Client',
       });
-      (mockPrisma.client.update as jest.Mock).mockResolvedValue({});
+      mockPrisma.client.update.mockResolvedValue({});
 
       const result = await service.remove(clientId);
 
@@ -503,7 +496,7 @@ describe('ClientService', () => {
     });
 
     it('should throw Error if client not found', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       await expect(service.remove('nonexistent')).rejects.toThrow(
         'Cliente não encontrado',
@@ -535,7 +528,7 @@ describe('ClientService', () => {
         ],
       };
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(client);
+      mockPrisma.client.findUnique.mockResolvedValue(client);
 
       const result = await service.getClientHistory('1');
 
@@ -548,13 +541,23 @@ describe('ClientService', () => {
       const oldDate = new Date('2024-01-01');
       const newDate = new Date('2024-12-01');
 
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: '1',
         name: 'Test',
         email: 'test@example.com',
         CustomerServices: [
-          { id: 'cs1', Date: oldDate, PerformedServices: [], ConsumedItems: [] },
-          { id: 'cs2', Date: newDate, PerformedServices: [], ConsumedItems: [] },
+          {
+            id: 'cs1',
+            Date: oldDate,
+            PerformedServices: [],
+            ConsumedItems: [],
+          },
+          {
+            id: 'cs2',
+            Date: newDate,
+            PerformedServices: [],
+            ConsumedItems: [],
+          },
         ],
       });
 
@@ -573,7 +576,7 @@ describe('ClientService', () => {
     });
 
     it('should throw Error if client not found', async () => {
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       await expect(service.getClientHistory('nonexistent')).rejects.toThrow(
         'Cliente não encontrado',
@@ -586,7 +589,7 @@ describe('ClientService', () => {
       const fourtyDaysAgo = new Date();
       fourtyDaysAgo.setDate(fourtyDaysAgo.getDate() - 40);
 
-      (mockPrisma.customerService.findMany as jest.Mock).mockResolvedValue([
+      mockPrisma.customerService.findMany.mockResolvedValue([
         {
           id: 'cs1',
           Date: fourtyDaysAgo,
@@ -621,7 +624,7 @@ describe('ClientService', () => {
       const fiftyDaysAgo = new Date();
       fiftyDaysAgo.setDate(fiftyDaysAgo.getDate() - 50);
 
-      (mockPrisma.customerService.findMany as jest.Mock).mockResolvedValue([
+      mockPrisma.customerService.findMany.mockResolvedValue([
         {
           id: 'cs1',
           Date: fiftyDaysAgo,
@@ -649,7 +652,7 @@ describe('ClientService', () => {
     });
 
     it('should exclude deleted clients from reminders', async () => {
-      (mockPrisma.customerService.findMany as jest.Mock).mockResolvedValue([
+      mockPrisma.customerService.findMany.mockResolvedValue([
         {
           id: 'cs1',
           Date: new Date(),
@@ -676,7 +679,7 @@ describe('ClientService', () => {
     });
 
     it('should ignore services with returnDaysReminder = 0', async () => {
-      (mockPrisma.customerService.findMany as jest.Mock).mockResolvedValue([
+      mockPrisma.customerService.findMany.mockResolvedValue([
         {
           id: 'cs1',
           Date: new Date(),
@@ -708,20 +711,24 @@ describe('ClientService', () => {
       const twentyDaysAgo = new Date();
       twentyDaysAgo.setDate(twentyDaysAgo.getDate() - 20);
 
-      (mockPrisma.customerService.findMany as jest.Mock).mockResolvedValue([
+      mockPrisma.customerService.findMany.mockResolvedValue([
         {
           id: 'cs1',
           Date: tenDaysAgo,
           Status: 'COMPLETED',
           Client: { id: 'c1', name: 'A', phone: '1' },
-          PerformedServices: [{ Service: { name: 'S1', returnDaysReminder: 15 } }],
+          PerformedServices: [
+            { Service: { name: 'S1', returnDaysReminder: 15 } },
+          ],
         },
         {
           id: 'cs2',
           Date: twentyDaysAgo,
           Status: 'COMPLETED',
           Client: { id: 'c2', name: 'B', phone: '2' },
-          PerformedServices: [{ Service: { name: 'S2', returnDaysReminder: 25 } }],
+          PerformedServices: [
+            { Service: { name: 'S2', returnDaysReminder: 25 } },
+          ],
         },
       ]);
 

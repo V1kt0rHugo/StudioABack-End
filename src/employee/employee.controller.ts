@@ -12,6 +12,7 @@ import {
 import { EmployeeService } from './employee.service';
 import { CreateEmployeeDto } from './dto/create-employee.dto';
 import { UpdateEmployeeDto } from './dto/update-employee.dto';
+import { UpdateServiceConfigDto } from './dto/update-service-config.dto';
 import { PayCommissionsDto } from './dto/pay-commissions.dto';
 import { PaginationDto } from '../common/dto/pagination.dto';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -59,12 +60,25 @@ export class EmployeeController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Patch(':id/service-config')
+  updateServiceConfig(
+    @Param('id') id: string,
+    @Body() updateServiceConfigDto: UpdateServiceConfigDto,
+  ) {
+    return this.employeeService.updateServiceConfig(id, updateServiceConfigDto);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':id/schedules/exceptions')
   saveExceptions(
     @Param('id') id: string,
-    @Body() body: { dates: string[], schedules: any[] }
+    @Body() body: { dates: string[]; schedules: any[] },
   ) {
-    return this.employeeService.saveWeekExceptions(id, body.dates, body.schedules);
+    return this.employeeService.saveWeekExceptions(
+      id,
+      body.dates,
+      body.schedules,
+    );
   }
 
   @UseGuards(JwtAuthGuard, RolesGuard)

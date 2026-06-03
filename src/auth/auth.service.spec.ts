@@ -54,9 +54,7 @@ describe('AuthService', () => {
         role: 'MANAGER',
       };
 
-      (mockEmployeeService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
-        employee,
-      );
+      mockEmployeeService.findByEmailWithPassword.mockResolvedValue(employee);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.validateUser(
@@ -82,10 +80,8 @@ describe('AuthService', () => {
         isEmailVerified: true,
       };
 
-      (mockEmployeeService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
-        null,
-      );
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(client);
+      mockEmployeeService.findByEmailWithPassword.mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(client);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.validateUser(
@@ -112,11 +108,9 @@ describe('AuthService', () => {
         role: 'MANAGER',
       };
 
-      (mockEmployeeService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
-        employee,
-      );
+      mockEmployeeService.findByEmailWithPassword.mockResolvedValue(employee);
       (bcrypt.compare as jest.Mock).mockResolvedValue(false);
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       const result = await service.validateUser(
         'employee@studioa.com',
@@ -127,10 +121,8 @@ describe('AuthService', () => {
     });
 
     it('should return null if client password is incorrect', async () => {
-      (mockEmployeeService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
-        null,
-      );
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue({
+      mockEmployeeService.findByEmailWithPassword.mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue({
         id: 'client1',
         email: 'client@example.com',
         password: 'hashedPassword',
@@ -154,10 +146,8 @@ describe('AuthService', () => {
         isEmailVerified: false,
       };
 
-      (mockEmployeeService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
-        null,
-      );
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(client);
+      mockEmployeeService.findByEmailWithPassword.mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(client);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       await expect(
@@ -169,10 +159,8 @@ describe('AuthService', () => {
     });
 
     it('should return null if user not found', async () => {
-      (mockEmployeeService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
-        null,
-      );
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(null);
+      mockEmployeeService.findByEmailWithPassword.mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(null);
 
       const result = await service.validateUser(
         'nonexistent@example.com',
@@ -191,10 +179,8 @@ describe('AuthService', () => {
         isEmailVerified: true,
       };
 
-      (mockEmployeeService.findByEmailWithPassword as jest.Mock).mockResolvedValue(
-        null,
-      );
-      (mockPrisma.client.findUnique as jest.Mock).mockResolvedValue(client);
+      mockEmployeeService.findByEmailWithPassword.mockResolvedValue(null);
+      mockPrisma.client.findUnique.mockResolvedValue(client);
       (bcrypt.compare as jest.Mock).mockResolvedValue(true);
 
       const result = await service.validateUser(
@@ -221,7 +207,7 @@ describe('AuthService', () => {
         role: 'MANAGER',
       };
 
-      (mockJwtService.sign as jest.Mock).mockReturnValue('jwt-token');
+      mockJwtService.sign.mockReturnValue('jwt-token');
 
       const result = await service.login(user);
 
@@ -247,7 +233,7 @@ describe('AuthService', () => {
         role: 'CLIENT',
       };
 
-      (mockJwtService.sign as jest.Mock).mockReturnValue('jwt-token');
+      mockJwtService.sign.mockReturnValue('jwt-token');
 
       const result = await service.login(user);
 
