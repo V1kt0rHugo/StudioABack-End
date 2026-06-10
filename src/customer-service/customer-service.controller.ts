@@ -62,6 +62,15 @@ export class CustomerServiceController {
   }
 
   @UseGuards(JwtAuthGuard)
+  @Post(':id/add-service')
+  addService(
+    @Param('id') id: string,
+    @Body() body: { services: any[]; employeeId?: string },
+  ) {
+    return this.customerServiceService.addService(id, body);
+  }
+
+  @UseGuards(JwtAuthGuard)
   @Post(':id/checkout')
   checkout(
     @Param('id') id: string,

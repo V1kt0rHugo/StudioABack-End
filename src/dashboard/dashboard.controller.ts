@@ -18,8 +18,8 @@ export class DashboardController {
 
   @UseGuards(JwtAuthGuard)
   @Get('meus-agendamentos')
-  getMyAppointments(@Request() req: any) {
-    const { sub: employeeId } = req.user;
-    return this.dashboardService.findMyAppointments(employeeId);
+  getMyAppointments(@Request() req: any, @Query('employeeId') filterEmployeeId?: string) {
+    const { sub: employeeId, role } = req.user;
+    return this.dashboardService.findMyAppointments(employeeId, role, filterEmployeeId);
   }
 }

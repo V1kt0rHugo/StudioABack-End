@@ -82,15 +82,6 @@ export class DashboardService {
 
       // 5. Client Retention Rate
       const totalClientsCount = await this.prisma.client.count();
-      const recurringClients = await this.prisma.client.count({
-        where: {
-          CustomerServices: {
-            // has more than 1 appointment
-            // Prisma doesn't support 'having count > 1' directly via count cleanly,
-            // we will query clients who have at least 2 appointments
-          },
-        },
-      });
       // Alternate approach for retention: fetch clients with their appointments count
       const allClients = await this.prisma.client.findMany({
         select: {
@@ -295,15 +286,28 @@ export class DashboardService {
     }
   }
 
-  async findMyAppointments(employeeId: string) {
+  async findMyAppointments(
+    employeeId: string,
+    role: string,
+    filterEmployeeId?: string,
+  ) {
+    let whereClause = {};
+
+    if (role === 'MANAGER') {
+      if (filterEmployeeId) {
+        whereClause = {
+          PerformedServices: { some: { idEmployee: filterEmployeeId } },
+        };
+      }
+      // If no filterEmployeeId, whereClause remains empty to fetch ALL appointments
+    } else {
+      whereClause = {
+        PerformedServices: { some: { idEmployee: employeeId } },
+      };
+    }
+
     return await this.prisma.customerService.findMany({
-      where: {
-        PerformedServices: {
-          some: {
-            idEmployee: employeeId,
-          },
-        },
-      },
+      where: whereClause,
       include: {
         Client: {
           select: {
@@ -318,6 +322,7 @@ export class DashboardService {
         PerformedServices: {
           include: {
             Service: true,
+            Employee: true, // Includes employee info so manager can see who did it
           },
         },
       },

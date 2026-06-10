@@ -618,4 +618,128 @@ export class CustomerServiceService {
 
     return Array.from(commissionMap.values());
   }
+
+  async addService(id: string, dto: { services: any[]; employeeId?: string }) {
+    const existing = await this.prisma.customerService.findUnique({
+      where: { id },
+      include: {
+        PerformedServices: true,
+      },
+    });
+
+    if (!existing) {
+      throw new NotFoundException('Atendimento não encontrado');
+    }
+
+    if (existing.Status === 'COMPLETED' || existing.Status === 'CANCELED') {
+      throw new BadRequestException(
+        `Não é possível adicionar serviços a um atendimento ${existing.Status}`,
+      );
+    }
+
+    // Default to the employee who performed the first service if not specified
+    const targetEmployeeId =
+      dto.employeeId || existing.PerformedServices[0]?.idEmployee;
+
+    if (!targetEmployeeId) {
+      throw new BadRequestException(
+        'Não foi possível determinar o profissional para os novos serviços',
+      );
+    }
+
+    const employee = await this.prisma.employee.findUnique({
+      where: { id: targetEmployeeId },
+      include: { ServiceConfigs: true },
+    });
+
+    if (!employee) {
+      throw new NotFoundException('Profissional não encontrado');
+    }
+
+    let calculatedTotalValue = existing.TotalValue;
+    let totalEstimatedDuration = 0;
+    const performedServicesData: {
+      idService: string;
+      idEmployee: string;
+      priceCharged: number;
+      commissionPercentage: number;
+      commissionValue: number;
+    }[] = [];
+
+    for (const item of dto.services) {
+      const service = await this.prisma.services.findUnique({
+        where: { id: item.serviceId },
+      });
+
+      if (!service) {
+        throw new NotFoundException(`Serviço ${item.serviceId} não encontrado`);
+      }
+
+      // Verifica se o profissional tem a skill
+      const hasSkill = employee.ServiceConfigs.some(
+        (config) => config.idService === item.serviceId,
+      );
+      if (!hasSkill) {
+        throw new BadRequestException(
+          `O funcionário ${employee.name} não possui a competência para realizar o serviço ${service.name}.`,
+        );
+      }
+
+      const customConfig = employee.ServiceConfigs.find(
+        (config) => config.idService === item.serviceId,
+      );
+
+      const duration =
+        item.customDuration ?? customConfig?.customDuration ?? service.estimatedDuration;
+      totalEstimatedDuration += duration;
+
+      const price =
+        item.customPrice ?? customConfig?.customPrice ?? service.price;
+      calculatedTotalValue += price;
+
+      const commissionPct =
+        customConfig?.customCommission ?? employee.commissionPercentage;
+
+      performedServicesData.push({
+        idService: item.serviceId,
+        idEmployee: employee.id,
+        priceCharged: price,
+        commissionPercentage: commissionPct,
+        commissionValue: price * (commissionPct / 100),
+      });
+    }
+
+    const newEndTime = new Date(
+      existing.EndTime.getTime() + totalEstimatedDuration * 60000,
+    );
+
+    // Salvar as alterações
+    return await this.prisma.$transaction(async (tx) => {
+      // 1. Inserir os novos serviços na tabela PerformedServices
+      for (const ps of performedServicesData) {
+        await tx.performedServices.create({
+          data: {
+            idCustomerService: existing.id,
+            ...ps,
+          },
+        });
+      }
+
+      // 2. Atualizar o CustomerService com novo valor total e horário de término
+      return await tx.customerService.update({
+        where: { id: existing.id },
+        data: {
+          TotalValue: calculatedTotalValue,
+          EndTime: newEndTime,
+        },
+        include: {
+          PerformedServices: {
+            include: {
+              Service: true,
+            },
+          },
+        },
+      });
+    });
+  }
 }

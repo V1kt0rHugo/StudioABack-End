@@ -437,9 +437,11 @@ export class EmployeeService {
     const date = new Date(year, month - 1, day);
     const dayOfWeek = date.getDay();
 
-    const daySchedules = employee.Schedules.filter(
-      (s) => s.dayOfWeek === dayOfWeek,
-    );
+    const exceptionsForDay = employee.Schedules.filter(s => s.date === dateString);
+    const daySchedules = exceptionsForDay.length > 0
+      ? exceptionsForDay
+      : employee.Schedules.filter((s) => s.dayOfWeek === dayOfWeek && !s.date);
+
     if (daySchedules.length === 0) return [];
 
     const startOfDay = new Date(date);
