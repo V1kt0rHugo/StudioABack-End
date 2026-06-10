@@ -33,8 +33,8 @@ export class CreateClientDto {
   phone?: string;
 
   @IsString()
-  @IsNotEmpty({ message: 'A data de nascimento é obrigatória' })
-  birthDate: string;
+  @IsOptional()
+  birthDate?: string;
 
   @IsString()
   @IsOptional()

@@ -93,8 +93,8 @@ describe('Email Verification E2E', () => {
       });
 
       expect(client).toBeTruthy();
-      expect(client.isEmailVerified).toBe(false);
-      expect(client.verificationCode).toBeTruthy();
+      expect(client!.isEmailVerified).toBe(false);
+      expect(client!.verificationCode).toBeTruthy();
     });
 
     it('should reject duplicate email', async () => {
@@ -152,8 +152,8 @@ describe('Email Verification E2E', () => {
         where: { email: testEmail },
       });
 
-      expect(client.isEmailVerified).toBe(true);
-      expect(client.verificationCode).toBeNull();
+      expect(client!.isEmailVerified).toBe(true);
+      expect(client!.verificationCode).toBeNull();
     });
 
     it('should reject already verified email', async () => {
@@ -245,8 +245,8 @@ describe('Email Verification E2E', () => {
         where: { email: testEmail },
       });
 
-      expect(client.verificationCode).not.toBe('old-code');
-      expect(client.verificationCode).toBeTruthy();
+      expect(client!.verificationCode).not.toBe('old-code');
+      expect(client!.verificationCode).toBeTruthy();
     });
 
     it('should reject resend for verified email', async () => {

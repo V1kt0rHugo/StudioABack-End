@@ -9,6 +9,8 @@ import { CustomerServiceFilterDto } from './dto/customer-service-filter.dto';
 import { CheckoutCustomerServiceDto } from './dto/checkout-customer-service.dto';
 import { PrismaService } from 'src/database/prisma.service';
 import { Prisma } from '@prisma/client';
+import { MailService } from 'src/mail/mail.service';
+import { NotificationsService } from 'src/notifications/notifications.service';
 export interface CommissionResult {
   employeeId: string;
   employeeName: string;
@@ -30,7 +32,11 @@ export interface CommissionByServiceResult {
 
 @Injectable()
 export class CustomerServiceService {
-  constructor(private prisma: PrismaService) {}
+  constructor(
+    private prisma: PrismaService,
+    private mailService: MailService,
+    private readonly notificationsService: NotificationsService,
+  ) {}
 
   async create(createCustomerServiceDto: CreateCustomerServiceDto) {
     const client = await this.prisma.client.findUnique({
@@ -67,6 +73,7 @@ export class CustomerServiceService {
       ? new Date(createCustomerServiceDto.Date)
       : new Date();
 
+    const serviceNamesList: string[] = [];
     for (const item of createCustomerServiceDto.services) {
       const service = await this.prisma.services.findUnique({
         where: { id: item.serviceId },
@@ -74,6 +81,7 @@ export class CustomerServiceService {
       if (!service) {
         throw new NotFoundException(`Serviço ${item.serviceId} não encontrado`);
       }
+      serviceNamesList.push(service.name);
 
       // Validação de Especialidade (Skill)
       const hasSkill = employee.ServiceConfigs.some(
@@ -91,7 +99,7 @@ export class CustomerServiceService {
       );
 
       const duration =
-        customConfig?.customDuration ?? service.estimatedDuration;
+        item.customDuration ?? customConfig?.customDuration ?? service.estimatedDuration;
       totalEstimatedDuration += duration;
 
       const price =
@@ -137,7 +145,7 @@ export class CustomerServiceService {
 
       if (!hasSchedule) {
         throw new BadRequestException(
-          `O funcionário ${employee.name} não atende em turnos ativos suficientes para cobrir o horário (${startTimeStr} às ${endTimeStr}).`,
+          'Você não marcou disponibilidade neste horário. Marque disponibilidade na sua escala ou tente em outro momento.',
         );
       }
     }
@@ -164,8 +172,10 @@ export class CustomerServiceService {
     });
 
     if (overlappingService) {
+      const conflictStart = overlappingService.CustomerService.Date.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
+      const conflictEnd = overlappingService.CustomerService.EndTime.toLocaleTimeString('pt-BR', { timeZone: 'America/Sao_Paulo', hour: '2-digit', minute: '2-digit' });
       throw new BadRequestException(
-        `O funcionário ${employee.name} já possui ocupação na agenda para o período solicitado.`,
+        `Um cliente já reservou um serviço que começa às ${conflictStart} e termina às ${conflictEnd}.`,
       );
     }
 
@@ -181,6 +191,42 @@ export class CustomerServiceService {
         clientFeedback: createCustomerServiceDto.clientFeedback,
       },
     });
+
+    // Enviar notificações de forma assíncrona (sem travar a resposta HTTP)
+    const serviceNames = serviceNamesList.join(', ');
+    const formattedDate = appointmentDate.toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+
+    this.mailService.sendNotification(
+      client.email,
+      'Agendamento Confirmado - Studio A',
+      'Seu agendamento foi confirmado!',
+      `Olá, ${client.name}! Seu agendamento no Studio A foi realizado com sucesso. Esperamos você no horário agendado!`,
+      [
+        { label: 'Serviço(s)', value: serviceNames },
+        { label: 'Profissional', value: employee.name },
+        { label: 'Data e Hora', value: formattedDate },
+        { label: 'Valor Estimado', value: `R$ ${calculatedTotalValue.toFixed(2)}` },
+      ]
+    ).catch(err => console.error('Erro ao enviar e-mail de agendamento para o cliente:', err));
+
+    this.mailService.sendNotification(
+      employee.email,
+      'Novo Atendimento na sua Agenda - Studio A',
+      'Você tem um novo atendimento agendado!',
+      `Olá, ${employee.name}! Um novo atendimento com você foi registrado no sistema.`,
+      [
+        { label: 'Cliente', value: client.name },
+        { label: 'Serviço(s)', value: serviceNames },
+        { label: 'Data e Hora', value: formattedDate },
+      ]
+    ).catch(err => console.error('Erro ao enviar e-mail de agendamento para o profissional:', err));
+
+    this.notificationsService.emit({
+      title: 'Novo Agendamento Realizado',
+      body: `O cliente ${client.name} agendou o serviço "${serviceNames}" com ${employee.name} para ${formattedDate}.`,
+      type: 'success',
+    });
+
     return customerService;
   }
 
@@ -264,7 +310,16 @@ export class CustomerServiceService {
   async update(id: string, updateCustomerServiceDto: UpdateCustomerServiceDto) {
     const existing = await this.prisma.customerService.findUnique({
       where: { id },
-      include: { ConsumedItems: true },
+      include: {
+        ConsumedItems: true,
+        Client: true,
+        PerformedServices: {
+          include: {
+            Employee: true,
+            Service: true,
+          },
+        },
+      },
     });
 
     if (!existing) throw new NotFoundException('Atendimento não encontrado');
@@ -272,7 +327,11 @@ export class CustomerServiceService {
     const newStatus = updateCustomerServiceDto.Status;
     const oldStatus = existing.Status;
 
-    return await this.prisma.$transaction(async (tx) => {
+    if (newStatus === 'CANCELED' && oldStatus !== 'CANCELED' && !updateCustomerServiceDto.cancellationReason) {
+      throw new BadRequestException('O motivo do cancelamento é obrigatório.');
+    }
+
+    const updated = await this.prisma.$transaction(async (tx) => {
       // Baixa de Estoque Opcional (Se houveram produtos consumidos)
       if (
         newStatus === 'COMPLETED' &&
@@ -349,6 +408,122 @@ export class CustomerServiceService {
         data: restUpdate as Prisma.CustomerServiceUncheckedUpdateInput,
       });
     });
+
+    // Enviar notificações de forma assíncrona pós-transação de sucesso
+    const clientName = existing.Client?.name || 'Cliente';
+    const clientEmail = existing.Client?.email;
+    const formattedDate = new Date(existing.Date).toLocaleString('pt-BR', { timeZone: 'America/Sao_Paulo' });
+    const serviceNames = existing.PerformedServices.map((ps) => ps.Service.name).join(', ');
+    const uniqueEmployees = Array.from(
+      new Map(existing.PerformedServices.map((ps) => [ps.Employee.id, ps.Employee])).values()
+    );
+
+    if (newStatus === 'CANCELED' && oldStatus !== 'CANCELED') {
+      // E-mail para o Cliente
+      if (clientEmail) {
+        this.mailService.sendNotification(
+          clientEmail,
+          'Agendamento Cancelado - Studio A',
+          'Seu agendamento foi cancelado',
+          `Olá, ${clientName}. Confirmamos o cancelamento do seu agendamento no Studio A.`,
+          [
+            { label: 'Serviço(s)', value: serviceNames },
+            { label: 'Data e Hora', value: formattedDate },
+            { label: 'Motivo', value: updateCustomerServiceDto.cancellationReason || 'Não informado' },
+          ]
+        ).catch(err => console.error('Erro ao notificar cancelamento para cliente:', err));
+      }
+
+      // E-mail para os Profissionais
+      for (const emp of uniqueEmployees) {
+        this.mailService.sendNotification(
+          emp.email,
+          'Atendimento Cancelado na sua Agenda - Studio A',
+          'Um atendimento foi cancelado',
+          `Olá, ${emp.name}. O atendimento agendado com você foi cancelado no sistema. Seu horário correspondente está livre agora.`,
+          [
+            { label: 'Cliente', value: clientName },
+            { label: 'Serviço(s)', value: serviceNames },
+            { label: 'Data e Hora', value: formattedDate },
+            { label: 'Motivo do Cancelamento', value: updateCustomerServiceDto.cancellationReason || 'Não informado' },
+          ]
+        ).catch(err => console.error('Erro ao notificar cancelamento para profissional:', err));
+      }
+
+      // E-mail para os Gerentes
+      this.prisma.employee.findMany({ where: { role: 'MANAGER' } })
+        .then((managers) => {
+          for (const manager of managers) {
+            this.mailService.sendNotification(
+              manager.email,
+              'Alerta de Cancelamento - Studio A',
+              'Um agendamento foi cancelado',
+              `Olá, ${manager.name}. O agendamento abaixo foi cancelado e retirado da escala do profissional. Qualquer faturamento associado foi removido e os estoques estornados.`,
+              [
+                { label: 'Cliente', value: clientName },
+                { label: 'Serviço(s)', value: serviceNames },
+                { label: 'Profissional', value: uniqueEmployees.map(e => e.name).join(', ') },
+                { label: 'Data e Hora', value: formattedDate },
+                { label: 'Valor Estornado', value: `R$ ${existing.TotalValue.toFixed(2)}` },
+              ]
+            ).catch(err => console.error('Erro ao notificar cancelamento para gerente:', err));
+          }
+        })
+        .catch(err => console.error('Erro ao buscar gerentes para cancelamento:', err));
+
+      this.notificationsService.emit({
+        title: 'Agendamento Cancelado',
+        body: `O agendamento de ${clientName} (${serviceNames}) para ${formattedDate} foi cancelado.`,
+        type: 'warning',
+      });
+    }
+
+    if (newStatus === 'COMPLETED' && oldStatus !== 'COMPLETED') {
+      // E-mail para o Cliente
+      if (clientEmail) {
+        this.mailService.sendNotification(
+          clientEmail,
+          'Obrigado pela visita! - Studio A',
+          'Recibo de Atendimento',
+          `Olá, ${clientName}! Agradecemos a sua preferência e visita ao Studio A. Segue o recibo de pagamento do seu atendimento:`,
+          [
+            { label: 'Serviço(s)', value: serviceNames },
+            { label: 'Profissional', value: uniqueEmployees.map(e => e.name).join(', ') },
+            { label: 'Data e Hora', value: formattedDate },
+            { label: 'Total Pago', value: `R$ ${existing.TotalValue.toFixed(2)}` },
+          ]
+        ).catch(err => console.error('Erro ao enviar recibo para cliente:', err));
+      }
+
+      // E-mail para os Gerentes (Recebimento do Caixa)
+      this.prisma.employee.findMany({ where: { role: 'MANAGER' } })
+        .then((managers) => {
+          for (const manager of managers) {
+            this.mailService.sendNotification(
+              manager.email,
+              'Novo Recebimento de Caixa - Studio A',
+              'Faturamento de Atendimento Confirmado',
+              `Olá, ${manager.name}. Um novo faturamento foi registrado com a conclusão do atendimento abaixo:`,
+              [
+                { label: 'Cliente', value: clientName },
+                { label: 'Serviço(s)', value: serviceNames },
+                { label: 'Profissional', value: uniqueEmployees.map(e => e.name).join(', ') },
+                { label: 'Data e Hora', value: formattedDate },
+                { label: 'Valor Recebido', value: `R$ ${existing.TotalValue.toFixed(2)}` },
+              ]
+            ).catch(err => console.error('Erro ao notificar faturamento para gerente:', err));
+          }
+        })
+        .catch(err => console.error('Erro ao buscar gerentes para faturamento:', err));
+
+      this.notificationsService.emit({
+        title: 'Faturamento Recebido',
+        body: `O atendimento de ${clientName} (${serviceNames}) foi finalizado. Caixa registrado: R$ ${existing.TotalValue.toFixed(2)}.`,
+        type: 'success',
+      });
+    }
+
+    return updated;
   }
 
   async checkout(id: string, checkoutDto: CheckoutCustomerServiceDto) {

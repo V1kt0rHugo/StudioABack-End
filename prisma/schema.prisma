@@ -120,6 +120,7 @@ model CustomerService {
   PerformedServices PerformedServices[]
   CashTransaction   CashFlowTransaction?
   clientFeedback    String?
+  cancellationReason String?
 }
 
 model Order {
@@ -192,6 +193,7 @@ model StockAdjustment {
 model Services {
   id                 String              @id @default(uuid())
   name               String
+  description        String?
   price              Float
   estimatedDuration  Int                 @default(30)
   returnDaysReminder Int?                @default(0)

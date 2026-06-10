@@ -1,14 +1,14 @@
 ### Create Employee
 @baseUrl = http://localhost:3000
-@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZHJlYWNhenVsYUBnbWFpbC5jb20iLCJzdWIiOiI0ZjM3OWQzYi0yNzgzLTRjMDAtYTVlZC0zMjcyYWUxZTgxMWYiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc3OTk4NzMzNCwiZXhwIjoxNzgwMDE2MTM0fQ.Rt6kjtA-grZcPo_uUZY_O1TkZ-urm1gLhM0NWKkd3dk
-@EscovaId = 81a61218-a96b-4a6c-8002-73c402134d4f
-@TinturaId = f3134f34-9d91-4f90-b941-202fbe7eaca1
+@ManagerToken = eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJlbWFpbCI6ImFuZHJlYWNhenVsYUBnbWFpbC5jb20iLCJzdWIiOiIzYThiYTAzMS1lMTFhLTQ2N2YtYWYwMS04OTFkZWM3MjBiMmMiLCJyb2xlIjoiTUFOQUdFUiIsImlhdCI6MTc4MDkzMzM2MiwiZXhwIjoxNzgwOTYyMTYyfQ.aRMAsjnWTlxZbDcNaUqv0Ph2k7rtF6rsiejQHYNvobI
+@EscovaId = 6ae95d08-3d92-4f20-b5e0-078847d1324e
+@TinturaId = 1528b65b-d993-4168-b743-3351bc72650b
 @CorteId = 15e87e82-d80a-4792-92eb-98552438d38a
 @PenteadoId = 108cddce-3b8f-45db-affc-416c35532f45
-@MechasId = e39b2972-3187-4dd7-8ed1-e2ae1918f013
-@GlossId = ff29eca4-5e77-4a26-b1f6-14f54d705e6c
-@MaquiagemId = d50640ae-cfb1-474b-9d71-15c2d6c7ee77
-@managerId = 4f379d3b-2783-4c00-a5ed-3272ae1e811f
+@MechasId = a729b724-a4ae-44ab-8da2-ccd3b6b9124b
+@GlossId = 7779363b-1fa0-4e2e-9023-25bed9d8bdc2
+@MaquiagemId = 718c9fae-3612-4739-9883-0d885d0200ea
+@managerId = 3a8ba031-e11a-467f-af01-891dec720b2c
 
 ### Create Employee
 POST {{baseUrl}}/employee
@@ -50,6 +50,11 @@ Authorization: Bearer {{ManagerToken}}
 ### GET All Clients
 GET {{baseUrl}}/client
 Authorization: Bearer {{ManagerToken}}
+
+### GET All CustomerService
+GET {{baseUrl}}/customer-service
+Authorization: Bearer {{ManagerToken}}
+
 
 ### Create Service
 POST {{baseUrl}}/services
@@ -134,4 +139,12 @@ Authorization: Bearer {{ManagerToken}}
     "password": "Password123!",
     "phone": "(11) 91234-5678",
     "birthDate": "1990-05-25T00:00:00Z"
+}
+
+### Verify Client Email
+POST {{baseUrl}}/client/verify
+Content-Type: application/json
+
+{   "email" : "cliente@gmail.com",
+    "code": "967210"
 }

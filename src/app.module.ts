@@ -11,6 +11,7 @@ import { CashFlowModule } from './cash-flow/cash-flow.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { NotificationsModule } from './notifications/notifications.module';
 
 @Module({
   imports: [
@@ -24,6 +25,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     AuthModule,
     MailModule,
     DashboardModule,
+    NotificationsModule,
   ],
   providers: [EmployeeService, PrismaService],
 })

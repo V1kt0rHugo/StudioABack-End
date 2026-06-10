@@ -17,6 +17,10 @@ export class ServiceItemDto {
   @IsOptional()
   @IsNumber()
   customPrice?: number;
+
+  @IsOptional()
+  @IsNumber()
+  customDuration?: number;
 }
 
 export class CreateCustomerServiceDto {

@@ -33,4 +33,8 @@ export class UpdateCustomerServiceDto extends PartialType(
   @ValidateNested({ each: true })
   @Type(() => ConsumedItemDto)
   consumedItems?: ConsumedItemDto[];
+
+  @IsOptional()
+  @IsString()
+  cancellationReason?: string;
 }
